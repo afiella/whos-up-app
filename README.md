@@ -20,11 +20,7 @@ A responsive and animated web application for managing “who’s up next” in 
 
 ## 🔗 Live Demo
 
-[Visit the deployed site on Vercel](your-vercel-link-here)
-
-## 📸 Preview
-
-![App Screenshot](screenshot-url-if-you-upload-one)
+https://whos-up-p2u9bmv8i-afiellas-projects.vercel.app/
 
 ## 💡 Use Case
 
