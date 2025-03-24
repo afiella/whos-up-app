@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Queue Animation</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        .player {
+            transition: transform 0.3s ease, opacity 0.3s ease;
+        }
+        .fade-out {
+            opacity: 0;
+            transform: translateY(-100%);
+        }
+        .moving-up {
+            transform: translateY(-100%);
+        }
+        .new-player {
+            opacity: 0;
+            transform: translateY(100%);
+        }
+        .new-player.show {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    </style>
+</head>
+<body class="bg-gray-100 flex justify-center items-start min-h-screen py-10">
+    <div class="bg-white p-6 rounded-lg shadow-lg w-full max-w-md text-center">
+        <h1 class="text-2xl font-bold mb-4">WHO'S UP?</h1>
+
+        <div id="currentNextUpBox" class="border border-gray-300 p-2 rounded mb-4">
+            Next: <span id="currentNextUp" class="font-semibold">No one</span>
+        </div>
+
+        <input type="text" id="playerName" placeholder="Enter Names" aria-label="Enter player name" 
+               class="w-full p-2 border border-gray-300 rounded mb-2 focus:outline-none focus:ring-2 focus:ring-blue-500" />
+
+        <div id="confirmation" class="text-green-600 text-sm h-4 mb-2"></div>
+
+        <div>
+            <h2 class="font-semibold text-left">Player Queue:</h2>
+            <div id="players" class="space-y-2 text-left"></div>
+        </div>
+
+        <div class="mt-4 space-x-2">
+            <button onclick="nextUp()" aria-label="Move to next player" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">Next Up</button>
+            <button onclick="resetPlayers()" class="bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600">Reset Players</button>
+        </div>
+
+        <div class="mt-6 text-left">
+            <h2 class="font-semibold">Out of Rotation:</h2>
+            <div id="outPlayers" class="space-y-2 mt-2"></div>
+        </div>
+    </div>
+
+    <script>
+        let players = JSON.parse(localStorage.getItem("playersQueue")) || [];
+        let outPlayers = JSON.parse(localStorage.getItem("outQueue")) || [];
+
+        const playersDiv = document.getElementById("players");
+        const outPlayersDiv = document.getElementById("outPlayers");
+        const currentNextUpSpan = document.getElementById("currentNextUp");
+        const confirmation = document.getElementById("confirmation");
+
+        document.getElementById("playerName").addEventListener("keyup", (e) => {
+            if (e.key === "Enter") addPlayer();
+        });
+
+        function addPlayer() {
+            const input = document.getElementById("playerName");
+            const name = input.value.trim();
+            if (!name) return;
+
+            const capitalized = name.charAt(0).toUpperCase() + name.slice(1);
+            const newPlayer = { id: Date.now(), name: capitalized, active: true };
+            players.push(newPlayer);
+            input.value = "";
+            input.focus();
+            showConfirmation(`${capitalized} added!`);
+            saveAndUpdate();
+        }
+
+        function showConfirmation(message) {
+            confirmation.textContent = message;
+            setTimeout(() => confirmation.textContent = "", 1500);
+        }
+
+        function updateDisplay() {
+            playersDiv.innerHTML = "";
+            players.forEach((player, index) => {
+                const playerDiv = document.createElement("div");
+                playerDiv.className = "player flex justify-between items-center bg-gray-100 px-4 py-2 rounded cursor-pointer";
+                playerDiv.dataset.id = player.id;
+                playerDiv.innerHTML = `<span>${player.name}</span>`;
+                playerDiv.onclick = () => moveToOut(player.id);
+                playersDiv.appendChild(playerDiv);
+            });
+            currentNextUpSpan.textContent = players.length > 0 ? players[0].name : "No one";
+
+            outPlayersDiv.innerHTML = "";
+            outPlayers.forEach(player => {
+                const outDiv = document.createElement("div");
+                outDiv.className = "flex justify-between items-center bg-gray-200 px-4 py-2 rounded cursor-pointer";
+                outDiv.innerHTML = `<span>${player.name}</span>`;
+                outDiv.onclick = () => moveToMain(player.id);
+                outPlayersDiv.appendChild(outDiv);
+            });
+        }
+
+        function nextUp() {
+            if (players.length === 0) return alert("No players in the queue.");
+
+            const firstPlayer = playersDiv.querySelector(".player");
+            if (firstPlayer) {
+                firstPlayer.classList.add("fade-out");
+            }
+
+            const remainingPlayers = Array.from(playersDiv.children).slice(1);
+            remainingPlayers.forEach((player) => {
+                player.classList.add("moving-up");
+            });
+
+            setTimeout(() => {
+                players.push(players.shift());
+                saveAndUpdate();
+            }, 300);
+        }
+
+        function resetPlayers() {
+            players = [];
+            outPlayers = [];
+            saveAndUpdate();
+        }
+
+        function moveToOut(id) {
+            const index = players.findIndex(p => p.id === id);
+            if (index !== -1) {
+                const [removed] = players.splice(index, 1);
+                outPlayers.push(removed);
+                saveAndUpdate();
+            }
+        }
+
+        function moveToMain(id) {
+            const index = outPlayers.findIndex(p => p.id === id);
+            if (index !== -1) {
+                const [restored] = outPlayers.splice(index, 1);
+                players.push(restored);
+                saveAndUpdate();
+            }
+        }
+
+        function saveAndUpdate() {
+            localStorage.setItem("playersQueue", JSON.stringify(players));
+            localStorage.setItem("outQueue", JSON.stringify(outPlayers));
+            updateDisplay();
+        }
+
+        updateDisplay();
+    </script>
+</body>
+</html>
