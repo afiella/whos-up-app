@@ -20,12 +20,22 @@
 </head>
 <body class="bg-gray-100 flex justify-center items-start min-h-screen py-10">
   <div class="bg-white p-6 rounded-lg shadow-lg w-full max-w-md text-center">
-    <h1 class="text-2xl font-bold mb-4">WHO'S UP?</h1>
+    <h1 class="text-2xl font-bold mb-4">Rotation</h1>
     <div id="currentNextUpBox" class="border border-gray-300 p-2 rounded mb-4">
       Next: <span id="currentNextUp" class="font-semibold">No one</span>
     </div>
-    <input type="text" id="playerName" placeholder="Enter Names"
+    <input type="text" id="playerName" placeholder="Enter Name"
            class="w-full p-2 border border-gray-300 rounded mb-2 focus:outline-none focus:ring-2 focus:ring-blue-500" />
+
+    <select id="playerColor" class="w-full p-2 border border-gray-300 rounded mb-4">
+      <option value="#fca5a5">Soft Red</option>
+      <option value="#fdba74">Soft Orange</option>
+      <option value="#fde68a">Soft Yellow</option>
+      <option value="#bbf7d0">Soft Green</option>
+      <option value="#bfdbfe">Soft Blue</option>
+      <option value="#ddd6fe">Soft Purple</option>
+    </select>
+
     <div id="confirmation" class="text-green-600 text-sm h-4 mb-2"></div>
     <div>
       <h2 class="font-semibold text-left">Player Queue:</h2>
@@ -56,10 +66,11 @@
 
     function addPlayer() {
       const input = document.getElementById("playerName");
+      const color = document.getElementById("playerColor").value;
       const name = input.value.trim();
       if (!name) return;
       const capitalized = name.charAt(0).toUpperCase() + name.slice(1);
-      const newPlayer = { id: Date.now(), name: capitalized, active: true };
+      const newPlayer = { id: Date.now(), name: capitalized, color: color, active: true };
       players.push(newPlayer);
       input.value = "";
       input.focus();
@@ -76,7 +87,8 @@
       playersDiv.innerHTML = "";
       players.forEach((player, index) => {
         const playerDiv = document.createElement("div");
-        playerDiv.className = "player flex justify-between items-center bg-gray-100 px-4 py-2 rounded cursor-pointer";
+        playerDiv.className = "player flex justify-between items-center px-4 py-2 rounded cursor-pointer";
+        playerDiv.style.backgroundColor = player.color || "#f3f4f6";
         playerDiv.draggable = true;
         playerDiv.dataset.index = index;
         playerDiv.dataset.id = player.id;
@@ -88,6 +100,10 @@
         playerDiv.addEventListener("dragenter", handleDragEnter);
         playerDiv.addEventListener("dragleave", handleDragLeave);
 
+        playerDiv.addEventListener("touchstart", handleTouchStart, { passive: true });
+        playerDiv.addEventListener("touchmove", handleTouchMove, { passive: false });
+        playerDiv.addEventListener("touchend", handleTouchEnd);
+
         playerDiv.onclick = () => moveToOut(player.id);
         playersDiv.appendChild(playerDiv);
       });
@@ -96,7 +112,8 @@
       outPlayersDiv.innerHTML = "";
       outPlayers.forEach((player) => {
         const outDiv = document.createElement("div");
-        outDiv.className = "flex justify-between items-center bg-gray-200 px-4 py-2 rounded cursor-pointer";
+        outDiv.className = "flex justify-between items-center px-4 py-2 rounded cursor-pointer";
+        outDiv.style.backgroundColor = player.color || "#e5e7eb";
         outDiv.innerHTML = `<span>${player.name}</span>`;
         outDiv.onclick = () => moveToMain(player.id);
         outPlayersDiv.appendChild(outDiv);
@@ -104,6 +121,7 @@
     }
 
     let dragSrcIndex = null;
+    let touchStartY = 0;
 
     function handleDragStart(e) {
       dragSrcIndex = +this.dataset.index;
@@ -130,6 +148,33 @@
 
     function handleDragLeave(e) {
       this.classList.remove("drag-over");
+    }
+
+    function handleTouchStart(e) {
+      touchStartY = e.touches[0].clientY;
+      dragSrcIndex = +this.dataset.index;
+    }
+
+    function handleTouchMove(e) {
+      e.preventDefault();
+      const touch = e.touches[0];
+      const target = document.elementFromPoint(touch.clientX, touch.clientY);
+      if (target && target.classList.contains("player")) {
+        target.classList.add("drag-over");
+      }
+    }
+
+    function handleTouchEnd(e) {
+      const touch = e.changedTouches[0];
+      const target = document.elementFromPoint(touch.clientX, touch.clientY);
+      if (target && target.dataset.index !== undefined) {
+        const destIndex = +target.dataset.index;
+        if (dragSrcIndex !== null && dragSrcIndex !== destIndex) {
+          const [moved] = players.splice(dragSrcIndex, 1);
+          players.splice(destIndex, 0, moved);
+          saveAndUpdate();
+        }
+      }
     }
 
     function nextUp() {
