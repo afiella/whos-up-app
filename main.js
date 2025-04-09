@@ -12,70 +12,81 @@ firebase.initializeApp(firebaseConfig);
 const db = firebase.database();
 
 const nameList = ["Archie", "Ella", "Veronica", "Dan", "Alex", "Adam", "Darryl", "Michael", "Tia", "Rob", "Jeremy", "Nassir"];
-const colorList = ["#f87171", "#60a5fa", "#34d399", "#fbbf24", "#a78bfa", "#10b981", "#f472b6"];
+const colorList = [
+  "#f87171", "#60a5fa", "#34d399", "#fbbf24", "#a78bfa",
+  "#f472b6", "#10b981", "#fb923c", "#4ade80", "#facc15", "#e879f9", "#38bdf8"
+];
 
 let currentRoom = window.location.pathname.includes("bh") ? "BH" : "59";
 let currentUser = null;
 
-document.addEventListener("DOMContentLoaded", () => {
-  renderDropdowns();
-  listenToQueue();
-});
+const nameButtonsContainer = document.getElementById("nameButtons");
+const nameSelectSection = document.getElementById("nameSelect");
+const mainScreen = document.getElementById("mainScreen");
+const queueDisplay = document.getElementById("queue");
+const joinedMessage = document.getElementById("joinedMessage");
 
-function renderDropdowns() {
-  const nameDropdown = document.getElementById("nameSelectDropdown");
-  const colorDropdown = document.getElementById("colorSelectDropdown");
-
-  nameList.forEach(name => {
-    const option = document.createElement("option");
-    option.value = name;
-    option.textContent = name;
-    nameDropdown.appendChild(option);
-  });
-
-  colorList.forEach(color => {
-    const option = document.createElement("option");
-    option.value = color;
-    option.textContent = color;
-    option.style.backgroundColor = color;
-    colorDropdown.appendChild(option);
+function renderNameButtons() {
+  nameButtonsContainer.innerHTML = "";
+  nameList.forEach((name, i) => {
+    const btn = document.createElement("button");
+    btn.textContent = name;
+    btn.className = "px-3 py-1 rounded text-white font-medium";
+    btn.style.backgroundColor = colorList[i % colorList.length];
+    btn.onclick = () => selectName(name, colorList[i % colorList.length]);
+    nameButtonsContainer.appendChild(btn);
   });
 }
 
-function joinRoom() {
-  const name = document.getElementById("nameSelectDropdown").value;
-  const color = document.getElementById("colorSelectDropdown").value;
-
-  if (!name || !color) return alert("Please select both name and color.");
-
-  currentUser = { name, color, active: true };
+function selectName(name, color) {
+  currentUser = { name, color, active: true, skip: false };
   db.ref(`rooms/${currentRoom}/players/${name}`).set(currentUser);
+  localStorage.setItem("currentUser", JSON.stringify(currentUser));
+  nameSelectSection.classList.add("hidden");
+  mainScreen.classList.remove("hidden");
+  joinedMessage.textContent = `Welcome, ${name}!`;
 
-  document.getElementById("nameSelect").classList.add("hidden");
-  document.getElementById("mainScreen").classList.remove("hidden");
-  document.getElementById("joinedMessage").textContent = `Welcome, ${name}!`;
-}
-
-function toggleStatus(isActive) {
-  if (!currentUser) return;
-  db.ref(`rooms/${currentRoom}/players/${currentUser.name}`).update({ active: isActive });
-}
-
-function listenToQueue() {
-  db.ref(`rooms/${currentRoom}/players`).on("value", (snapshot) => {
-    const players = snapshot.val() || {};
-    const activePlayers = Object.values(players).filter(p => p.active);
-    const queueDiv = document.getElementById("queue");
-
-    queueDiv.innerHTML = "";
-    activePlayers.forEach((p, i) => {
-      const div = document.createElement("div");
-      div.className = "px-4 py-2 rounded text-white font-semibold";
-      div.style.backgroundColor = p.color;
-      div.textContent = `${i + 1}. ${p.name}`;
-      queueDiv.appendChild(div);
-    });
-
-    document.getElementById("nextUp").textContent = activePlayers[0]?.name || "No one";
+  db.ref(`rooms/${currentRoom}/players`).on("value", snapshot => {
+    const data = snapshot.val() || {};
+    const activePlayers = Object.values(data).filter(p => p.active && !p.skip);
+    updateDisplay(activePlayers);
   });
 }
+
+function updateDisplay(players) {
+  queueDisplay.innerHTML = "";
+  players.forEach((p, i) => {
+    const div = document.createElement("div");
+    div.innerHTML = `
+      <div class="flex items-center gap-2">
+        <span class="inline-block w-4 h-4 rounded-full" style="background-color: ${p.color}"></span>
+        <span>${i + 1}. ${p.name}</span>
+      </div>
+    `;
+    queueDisplay.appendChild(div);
+  });
+
+  const next = players[0];
+  const nextUpDiv = document.getElementById("nextUp");
+  nextUpDiv.innerHTML = next
+    ? `
+      <div class="flex items-center justify-center gap-2">
+        <span class="inline-block w-4 h-4 rounded-full" style="background-color: ${next.color}"></span>
+        <span class="font-semibold">${next.name}</span>
+      </div>
+    `
+    : "No one";
+}
+
+function setStatus(action) {
+  if (!currentUser) return;
+
+  const updates = {
+    active: action === "active",
+    skip: action === "skip"
+  };
+
+  db.ref(`rooms/${currentRoom}/players/${currentUser.name}`).update(updates);
+}
+
+renderNameButtons();
