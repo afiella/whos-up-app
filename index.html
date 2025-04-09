@@ -51,6 +51,11 @@
         localStorage.setItem("currentUser", JSON.stringify({ role: "admin" }));
         adminLoginScreen.classList.add("hidden");
         mainApp.classList.remove("hidden");
+      document.getElementById("selfToggle").classList.remove("hidden");
+      onValue(playersRef, (snapshot) => {
+        const playersData = snapshot.val();
+        updateDisplay(playersData);
+      }, { onlyOnce: true });
 
       // Show player control buttons if not admin
       if (!loggedInUser.role || loggedInUser.role !== "admin") {
