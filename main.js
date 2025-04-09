@@ -25,6 +25,7 @@ const nameSelectSection = document.getElementById("nameSelect");
 const mainScreen = document.getElementById("mainScreen");
 const queueDisplay = document.getElementById("queue");
 const joinedMessage = document.getElementById("joinedMessage");
+const nextUpDiv = document.getElementById("nextUp");
 
 function renderNameButtons() {
   nameButtonsContainer.innerHTML = "";
@@ -49,44 +50,46 @@ function selectName(name, color) {
 
   db.ref(`rooms/${currentRoom}/players`).on("value", snapshot => {
     const data = snapshot.val() || {};
-    const activePlayers = Object.values(data)
-      .filter(p => p.active && !p.skip)
-      .sort((a, b) => a.joinedAt - b.joinedAt);
-    updateDisplay(activePlayers, data);
+    updateDisplay(data);
   });
 }
 
-function updateDisplay(activePlayers, allPlayers) {
+function updateDisplay(playersMap) {
+  const allPlayers = Object.values(playersMap || {});
+  const activePlayers = allPlayers
+    .filter(p => p.active && !p.skip)
+    .sort((a, b) => a.joinedAt - b.joinedAt);
+
   queueDisplay.innerHTML = "";
-  const allSorted = Object.values(allPlayers || {}).sort((a, b) => a.joinedAt - b.joinedAt);
 
-  allSorted.forEach((p, i) => {
-    let status = "Active";
-    let badgeColor = "bg-green-500";
+  allPlayers
+    .sort((a, b) => a.joinedAt - b.joinedAt)
+    .forEach((p) => {
+      let status = "Active";
+      let badgeColor = "bg-green-500";
 
-    if (!p.active) {
-      status = "Out";
-      badgeColor = "bg-red-500";
-    } else if (p.skip) {
-      status = "With Customer";
-      badgeColor = "bg-yellow-500";
-    }
+      if (!p.active) {
+        status = "Out";
+        badgeColor = "bg-red-500";
+      } else if (p.skip) {
+        status = "With Customer";
+        badgeColor = "bg-yellow-500";
+      }
 
-    const div = document.createElement("div");
-    div.innerHTML = `
-      <div class="flex items-center justify-between">
-        <div class="flex items-center gap-2">
-          <span class="inline-block w-4 h-4 rounded-full" style="background-color: ${p.color}"></span>
-          <span>${p.name}</span>
+      const div = document.createElement("div");
+      div.innerHTML = `
+        <div class="flex items-center justify-between">
+          <div class="flex items-center gap-2">
+            <span class="inline-block w-4 h-4 rounded-full" style="background-color: ${p.color}"></span>
+            <span>${p.name}</span>
+          </div>
+          <span class="text-xs text-white px-2 py-1 rounded ${badgeColor}">${status}</span>
         </div>
-        <span class="text-xs text-white px-2 py-1 rounded ${badgeColor}">${status}</span>
-      </div>
-    `;
-    queueDisplay.appendChild(div);
-  });
+      `;
+      queueDisplay.appendChild(div);
+    });
 
   const next = activePlayers[0];
-  const nextUpDiv = document.getElementById("nextUp");
   nextUpDiv.innerHTML = next
     ? `
       <div class="flex items-center justify-center gap-2">
@@ -100,13 +103,13 @@ function updateDisplay(activePlayers, allPlayers) {
 function setStatus(action) {
   if (!currentUser) return;
 
-  const userRef = db.ref(`rooms/${currentRoom}/players/${currentUser.name]`);
+  const userRef = db.ref(`rooms/${currentRoom}/players/${currentUser.name}`);
 
   if (action === "active" || action === "skip") {
     const updates = {
       active: true,
       skip: action === "skip",
-      joinedAt: Date.now()
+      joinedAt: Date.now() // Always update joinedAt to move to the end
     };
     userRef.update(updates);
     currentUser = { ...currentUser, ...updates };
