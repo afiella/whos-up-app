@@ -11,7 +11,7 @@ const firebaseConfig = {
 firebase.initializeApp(firebaseConfig);
 const db = firebase.database();
 
-const nameList = ["Archie", "Ella", "Veronica", "Dan", "Alex", "Adam", "Darryl", "Michael", "Tia", "Rob", "Jeremy", "Nassir"];
+const nameList = ["Archie", "Ella", "Veronica", "Dan", "Alex", "Adam", "Darryl", "Michael", "Tia", "Rob", "Jeremy", "Nassir", "Greg"];
 const colorList = [
   "#f87171", "#60a5fa", "#34d399", "#fbbf24", "#a78bfa",
   "#f472b6", "#10b981", "#fb923c", "#4ade80", "#facc15", "#e879f9", "#38bdf8"
