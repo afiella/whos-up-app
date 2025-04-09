@@ -5,32 +5,32 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>BH Room</title>
   <script src="https://cdn.tailwindcss.com"></script>
-  <script src="https://www.gstatic.com/firebasejs/11.6.0/firebase-app.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/11.6.0/firebase-database.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
   <script defer src="main.js"></script>
 </head>
-<body class="bg-gray-100 min-h-screen flex items-center justify-center p-4">
+<body class="bg-gray-100 min-h-screen flex items-center justify-center">
   <div class="bg-white p-6 rounded shadow-md w-full max-w-md">
-    <h1 class="text-xl font-bold mb-4 text-center">BH Room</h1>
+    <h1 class="text-xl font-bold mb-4">BH Room</h1>
 
-    <!-- Name select section -->
-    <div id="nameSelect" class="mb-6">
-      <p class="mb-2 text-center">Select your name to join:</p>
-      <div id="nameButtons" class="flex flex-wrap justify-center gap-3 mt-2"></div>
+    <div id="nameSelect">
+      <label for="nameSelectDropdown" class="block font-semibold mb-1">Select your name:</label>
+      <select id="nameSelectDropdown" class="w-full p-2 border rounded mb-4"></select>
+
+      <label for="colorSelectDropdown" class="block font-semibold mb-1">Select your color:</label>
+      <select id="colorSelectDropdown" class="w-full p-2 border rounded mb-4"></select>
+
+      <button onclick="joinRoom()" class="bg-blue-500 text-white w-full py-2 rounded">Join</button>
     </div>
 
-    <!-- Main screen section -->
     <div id="mainScreen" class="hidden">
-      <p class="text-green-600 font-semibold text-center mb-2" id="joinedMessage"></p>
-      <div class="border p-2 rounded mb-4 text-center">
-        <p class="font-medium text-sm">Next:</p>
-        <div id="queue" class="space-y-1 mt-1 text-sm"></div>
-      </div>
-
-      <div class="flex justify-center gap-3">
-        <button onclick="toggleStatus(true)" class="bg-green-500 text-white px-4 py-2 rounded">Join</button>
-        <button onclick="toggleStatus(false)" class="bg-red-500 text-white px-4 py-2 rounded">Leave</button>
-        <a href="index.html" class="text-blue-600 underline text-sm self-center">Switch Room</a>
+      <p id="joinedMessage" class="text-green-600 font-semibold mb-4"></p>
+      <div class="border p-2 rounded mb-4">Next: <span id="nextUp">Loading...</span></div>
+      <div id="queue" class="space-y-1 mb-4"></div>
+      <div class="space-x-2">
+        <button onclick="toggleStatus(true)" class="bg-green-500 text-white px-4 py-1 rounded">Join</button>
+        <button onclick="toggleStatus(false)" class="bg-red-500 text-white px-4 py-1 rounded">Leave</button>
+        <a href="index.html" class="text-blue-600 underline">Switch Room</a>
       </div>
     </div>
   </div>
