@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>59 Room</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://www.gstatic.com/firebasejs/11.6.0/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/11.6.0/firebase-database.js"></script>
+  <script defer src="main.js"></script>
+</head>
+<body class="bg-gray-100 flex items-center justify-center min-h-screen p-4">
+  <div class="bg-white p-6 rounded shadow-md w-full max-w-sm text-center">
+    <h1 class="text-xl font-bold mb-2">59 Room</h1>
+    <div id="nameSelect" class="mb-4">
+      <p class="mb-2">Select your name to join:</p>
+      <div id="nameButtons" class="flex flex-wrap justify-center gap-2 mt-2"></div>
+    </div>
+    <div id="mainScreen" class="hidden">
+      <p class="font-semibold text-green-600" id="welcomeMsg"></p>
+      <div class="border p-2 rounded my-4">Next: <span id="currentNextUp">No one</span></div>
+      <div id="queue" class="space-y-1 mb-4"></div>
+      <div class="space-x-2">
+        <button onclick="toggleStatus(true)" class="bg-green-500 text-white px-3 py-1 rounded">Join</button>
+        <button onclick="toggleStatus(false)" class="bg-red-500 text-white px-3 py-1 rounded">Leave</button>
+        <a href="index.html" class="text-blue-600 text-sm block mt-2">Back to rooms</a>
+      </div>
+    </div>
+  </div>
+</body>
+</html>
