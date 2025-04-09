@@ -125,4 +125,17 @@ function setStatus(action) {
   }
 }
 
+function leaveGame() {
+  if (!currentUser) return;
+
+  // Remove player from Firebase
+  db.ref(`rooms/${currentRoom}/players/${currentUser.name}`).remove();
+
+  // Clear from localStorage
+  localStorage.removeItem("currentUser");
+
+  // Redirect to landing page
+  window.location.href = "index.html";
+}
+
 renderNameButtons();
