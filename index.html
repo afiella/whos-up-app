@@ -8,49 +8,43 @@
   <script src="https://www.gstatic.com/firebasejs/11.6.0/firebase-app.js"></script>
   <script src="https://www.gstatic.com/firebasejs/11.6.0/firebase-database.js"></script>
   <script>
-    const { initializeApp } = firebase;
-    const { getDatabase, ref, onValue, set, update } = firebase.database;
-
-    const firebaseConfig = {
-      apiKey: "AIzaSyDkEKUzUhc-nKFLnF1w0MOm6qwpKHTpfaI",
-      authDomain: "who-s-up-app.firebaseapp.com",
-      databaseURL: "https://who-s-up-app-default-rtdb.firebaseio.com",
-      projectId: "who-s-up-app",
-      storageBucket: "who-s-up-app.appspot.com",
-      messagingSenderId: "167292375113",
-      appId: "1:167292375113:web:ce718a1aab4852fe5daf98",
-      measurementId: "G-NPK2KV2CXY"
-    };
-
-    const app = initializeApp(firebaseConfig);
-    const db = getDatabase(app);
-    let currentRoom = null;
-    let playersRef;
-    let loggedInUser = JSON.parse(localStorage.getItem("currentUser")) || null;
-
-    function logout() {
-      localStorage.clear();
-      location.reload();
-    }
-
-    function selectRoom(roomCode) {
-      currentRoom = roomCode;
-      playersRef = ref(db, `rooms/${roomCode}/players`);
-      document.getElementById("roleSelectScreen").classList.add("hidden");
-      document.getElementById("loginScreen").classList.remove("hidden");
-
-      onValue(playersRef, (snapshot) => {
-        const playersData = snapshot.val();
-        updateDisplay(playersData);
-      });
-    }
-
     window.addEventListener("DOMContentLoaded", () => {
-  window.selectColor = function(hex) {
-    document.getElementById("loginColor").value = hex;
-    [...document.querySelectorAll('#colorCircleOptions button')].forEach(btn => btn.classList.remove('ring-4', 'ring-offset-2', 'ring-gray-700'));
-    event.target.classList.add('ring-4', 'ring-offset-2', 'ring-gray-700');
-  };
+      const firebaseConfig = {
+        apiKey: "AIzaSyDkEKUzUhc-nKFLnF1w0MOm6qwpKHTpfaI",
+        authDomain: "who-s-up-app.firebaseapp.com",
+        databaseURL: "https://who-s-up-app-default-rtdb.firebaseio.com",
+        projectId: "who-s-up-app",
+        storageBucket: "who-s-up-app.appspot.com",
+        messagingSenderId: "167292375113",
+        appId: "1:167292375113:web:ce718a1aab4852fe5daf98",
+        measurementId: "G-NPK2KV2CXY"
+      };
+
+      const app = firebase.initializeApp(firebaseConfig);
+      const db = firebase.database();
+
+      let currentRoom = null;
+      let playersRef;
+      let loggedInUser = JSON.parse(localStorage.getItem("currentUser")) || null;
+
+      window.selectColor = function(hex) {
+        document.getElementById("loginColor").value = hex;
+        [...document.querySelectorAll('#colorCircleOptions button')].forEach(btn => btn.classList.remove('ring-4', 'ring-offset-2', 'ring-gray-700'));
+        event.target.classList.add('ring-4', 'ring-offset-2', 'ring-gray-700');
+      };
+
+      window.selectRoom = function(roomCode) {
+        currentRoom = roomCode;
+        playersRef = firebase.database().ref(`rooms/${roomCode}/players`);
+        document.getElementById("roleSelectScreen").classList.add("hidden");
+        document.getElementById("loginScreen").classList.remove("hidden");
+
+        playersRef.on("value", (snapshot) => {
+          const playersData = snapshot.val();
+          updateDisplay(playersData);
+        });
+      };
+
       document.getElementById("loginBtn").addEventListener("click", () => {
         const nameInput = document.getElementById("loginName").value.trim();
         const color = document.getElementById("loginColor").value;
@@ -63,7 +57,7 @@
         const capitalized = nameInput.charAt(0).toUpperCase() + nameInput.slice(1);
         const newPlayer = { name: capitalized, color: color, active: true, skip: false };
 
-        set(ref(db, `rooms/${currentRoom}/players/${capitalized}`), newPlayer);
+        firebase.database().ref(`rooms/${currentRoom}/players/${capitalized}`).set(newPlayer);
         loggedInUser = newPlayer;
         localStorage.setItem("currentUser", JSON.stringify(newPlayer));
 
@@ -77,70 +71,69 @@
         welcome.textContent = `Welcome, ${capitalized} ${emoji}`;
         document.getElementById("mainApp").prepend(welcome);
 
-        // Show personal screen layout
         document.getElementById("selfToggle").classList.remove("hidden");
         document.getElementById("players").classList.remove("hidden");
         document.getElementById("outPlayers").classList.remove("hidden");
+      });
 
-        onValue(playersRef, (snapshot) => {
-          const playersData = snapshot.val();
-          updateDisplay(playersData);
+      window.setRotationStatus = function(status) {
+        const userRef = firebase.database().ref(`rooms/${currentRoom}/players/${loggedInUser.name}`);
+        if (status === 'in') {
+          userRef.update({ active: true, skip: false });
+        } else if (status === 'out') {
+          userRef.update({ active: false, skip: false });
+        } else if (status === 'skip') {
+          userRef.update({ skip: true });
+        }
+      };
+
+      function updateDisplay(playersObj) {
+        const players = Object.values(playersObj || {}).filter(p => p.active);
+        const nextPlayer = players[0]?.name || null;
+        const outPlayers = Object.values(playersObj || {}).filter(p => !p.active);
+        document.getElementById("players").innerHTML = "";
+
+        if (loggedInUser?.name) {
+          const pos = players.findIndex(p => p.name === loggedInUser.name);
+          const container = document.createElement("div");
+          container.className = "text-sm text-gray-700";
+          container.innerHTML = pos !== -1
+            ? `<p class="font-medium">${pos === 0 ? "You're up next!" : `You’re up in ${pos} turn(s)`}</p>`
+            : `<p class="text-red-500 font-medium">You are currently out of rotation.</p>`;
+          document.getElementById("players").appendChild(container);
+        }
+
+        document.getElementById("currentNextUp").textContent = nextPlayer || "No one";
+        const isUp = loggedInUser?.name === nextPlayer;
+        const nextBox = document.getElementById("currentNextUpBox");
+        nextBox.style.borderColor = isUp ? "#22c55e" : "#d1d5db";
+        nextBox.classList.remove("animate-pop");
+        if (isUp) {
+          void nextBox.offsetWidth;
+          nextBox.classList.add("animate-pop");
+        }
+
+        const outPlayersDiv = document.getElementById("outPlayers");
+        outPlayersDiv.innerHTML = "";
+        outPlayers.forEach(player => {
+          const div = document.createElement("div");
+          div.className = "flex items-center space-x-4 p-2 rounded";
+          div.style.backgroundColor = player.color;
+          div.innerHTML = `
+            <div class="w-10 h-10 rounded-full flex items-center justify-center text-white font-bold" style="background-color: ${player.color}">
+              ${player.name.charAt(0)}
+            </div>
+            <span>${player.name}</span>
+          `;
+          outPlayersDiv.appendChild(div);
         });
-      });
+      }
+
+      window.logout = function() {
+        localStorage.clear();
+        location.reload();
+      };
     });
-
-    function setRotationStatus(status) {
-      const userRef = ref(db, `rooms/${currentRoom}/players/${loggedInUser.name}`);
-      if (status === 'in') {
-        update(userRef, { active: true, skip: false });
-      } else if (status === 'out') {
-        update(userRef, { active: false, skip: false });
-      } else if (status === 'skip') {
-        update(userRef, { skip: true });
-      }
-    }
-
-    function updateDisplay(playersObj) {
-      const players = Object.values(playersObj || {}).filter(p => p.active);
-      const nextPlayer = players[0]?.name || null;
-      const outPlayers = Object.values(playersObj || {}).filter(p => !p.active);
-      document.getElementById("players").innerHTML = "";
-
-      if (loggedInUser?.name) {
-        const pos = players.findIndex(p => p.name === loggedInUser.name);
-        const container = document.createElement("div");
-        container.className = "text-sm text-gray-700";
-        container.innerHTML = pos !== -1
-          ? `<p class="font-medium">${pos === 0 ? "You're up next!" : `You’re up in ${pos} turn(s)`}</p>`
-          : `<p class="text-red-500 font-medium">You are currently out of rotation.</p>`;
-        document.getElementById("players").appendChild(container);
-      }
-
-      document.getElementById("currentNextUp").textContent = nextPlayer || "No one";
-      const isUp = loggedInUser?.name === nextPlayer;
-      const nextBox = document.getElementById("currentNextUpBox");
-      nextBox.style.borderColor = isUp ? "#22c55e" : "#d1d5db";
-      nextBox.classList.remove("animate-pop");
-      if (isUp) {
-        void nextBox.offsetWidth;
-        nextBox.classList.add("animate-pop");
-      }
-
-      const outPlayersDiv = document.getElementById("outPlayers");
-      outPlayersDiv.innerHTML = "";
-      outPlayers.forEach(player => {
-        const div = document.createElement("div");
-        div.className = "flex items-center space-x-4 p-2 rounded";
-        div.style.backgroundColor = player.color;
-        div.innerHTML = `
-          <div class="w-10 h-10 rounded-full flex items-center justify-center text-white font-bold" style="background-color: ${player.color}">
-            ${player.name.charAt(0)}
-          </div>
-          <span>${player.name}</span>
-        `;
-        outPlayersDiv.appendChild(div);
-      });
-    }
   </script>
   <style>
     @keyframes pop {
@@ -164,14 +157,13 @@
     <h1 class="text-2xl font-bold mb-4">Join Who's Up</h1>
     <input id="loginName" type="text" placeholder="Your name" class="w-full p-2 border border-gray-300 rounded mb-2">
     <div id="colorCircleOptions" class="flex justify-center flex-wrap gap-3 mb-4">
-  <button class="w-10 h-10 rounded-full border-2" style="background-color:#f87171" onclick="selectColor('#f87171')"></button>
-  <button class="w-10 h-10 rounded-full border-2" style="background-color:#60a5fa" onclick="selectColor('#60a5fa')"></button>
-  <button class="w-10 h-10 rounded-full border-2" style="background-color:#34d399" onclick="selectColor('#34d399')"></button>
-  <button class="w-10 h-10 rounded-full border-2" style="background-color:#fbbf24" onclick="selectColor('#fbbf24')"></button>
-  <button class="w-10 h-10 rounded-full border-2" style="background-color:#a78bfa" onclick="selectColor('#a78bfa')"></button>
-</div>
-<input type="hidden" id="loginColor">
-    <div id="colorSelectContainer" class="flex justify-center flex-wrap gap-2 mb-4"></div>
+      <button class="w-10 h-10 rounded-full border-2" style="background-color:#f87171" onclick="selectColor('#f87171')"></button>
+      <button class="w-10 h-10 rounded-full border-2" style="background-color:#60a5fa" onclick="selectColor('#60a5fa')"></button>
+      <button class="w-10 h-10 rounded-full border-2" style="background-color:#34d399" onclick="selectColor('#34d399')"></button>
+      <button class="w-10 h-10 rounded-full border-2" style="background-color:#fbbf24" onclick="selectColor('#fbbf24')"></button>
+      <button class="w-10 h-10 rounded-full border-2" style="background-color:#a78bfa" onclick="selectColor('#a78bfa')"></button>
+    </div>
+    <input type="hidden" id="loginColor">
     <button id="loginBtn" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">Join</button>
   </div>
   <div id="mainApp" class="hidden bg-white p-6 rounded-lg shadow-lg w-full max-w-md text-center">
@@ -180,22 +172,21 @@
       Next: <span id="currentNextUp" class="font-semibold">No one</span>
     </div>
     <div class="mb-4 hidden flex-col gap-4" id="selfToggle">
-  <div class="flex justify-center gap-4">
-    <div class="flex flex-col items-center">
-      <button onclick="setRotationStatus('in')" class="w-14 h-14 rounded-full bg-green-500 text-white font-bold text-xs hover:bg-green-600 flex items-center justify-center">In</button>
-      <span class="text-xs mt-1">In Rotation</span>
+      <div class="flex justify-center gap-4">
+        <div class="flex flex-col items-center">
+          <button onclick="setRotationStatus('in')" class="w-14 h-14 rounded-full bg-green-500 text-white font-bold text-xs hover:bg-green-600 flex items-center justify-center">In</button>
+          <span class="text-xs mt-1">In Rotation</span>
+        </div>
+        <div class="flex flex-col items-center">
+          <button onclick="setRotationStatus('skip')" class="w-14 h-14 rounded-full bg-yellow-400 text-white font-bold text-xs hover:bg-yellow-500 flex items-center justify-center">Skip</button>
+          <span class="text-xs mt-1">Skip Me</span>
+        </div>
+        <div class="flex flex-col items-center">
+          <button onclick="setRotationStatus('out')" class="w-14 h-14 rounded-full bg-red-500 text-white font-bold text-xs hover:bg-red-600 flex items-center justify-center">Out</button>
+          <span class="text-xs mt-1">Out of Rotation</span>
+        </div>
+      </div>
     </div>
-    <div class="flex flex-col items-center">
-      <button onclick="setRotationStatus('skip')" class="w-14 h-14 rounded-full bg-yellow-400 text-white font-bold text-xs hover:bg-yellow-500 flex items-center justify-center">Skip</button>
-      <span class="text-xs mt-1">Skip Me</span>
-    </div>
-    <div class="flex flex-col items-center">
-      <button onclick="setRotationStatus('out')" class="w-14 h-14 rounded-full bg-red-500 text-white font-bold text-xs hover:bg-red-600 flex items-center justify-center">Out</button>
-      <span class="text-xs mt-1">Out of Rotation</span>
-    </div>
-  </div>
-</div>
-</div>
     <div>
       <h2 class="font-semibold text-left">Player Queue:</h2>
       <div id="players" class="space-y-2 text-left"></div>
