@@ -25,11 +25,13 @@ window.selectColor = function(hex) {
     return;
   }
   const capitalized = name.charAt(0).toUpperCase() + name.slice(1);
+  loggedInPlayerName = capitalized;
   const newPlayer = { id: Date.now(), name: capitalized, color: hex, active: true };
   firebase.database().ref(`rooms/${currentRoom}/players/${capitalized}`).set(newPlayer);
   document.getElementById("playerName").value = "";
   document.getElementById("playerColor").value = hex;
   showConfirmation(`${capitalized} added!`);
+switchRoom(currentRoom);
 };
     const firebaseConfig = {
       apiKey: "AIzaSyDkEKUzUhc-nKFLnF1w0MOm6qwpKHTpfaI",
@@ -95,19 +97,29 @@ window.selectColor = function(hex) {
 
   <script>
     let players = [];
+    let loggedInPlayerName = null;
     let outPlayers = [];
+    let playerListener = null;
     const playersDiv = document.getElementById("players");
     const outPlayersDiv = document.getElementById("outPlayers");
     const currentNextUpSpan = document.getElementById("currentNextUp");
     const confirmation = document.getElementById("confirmation");
 
     function switchRoom(room) {
+      if (currentRoom && loggedInPlayerName) {
+        firebase.database().ref(`rooms/${currentRoom}/players/${loggedInPlayerName}`).remove();
+      }
       currentRoom = room;
-      firebase.database().ref(`rooms/${currentRoom}/players`).on("value", snapshot => {
+      if (playerListener) {
+        playerListener.off();
+      }
+      playerListener = firebase.database().ref(`rooms/${currentRoom}/players`);
+      playerListener.on("value", snapshot => {
         const data = snapshot.val() || {};
         players = Object.values(data).filter(p => p.active);
         outPlayers = Object.values(data).filter(p => !p.active);
         updateDisplay();
+      });
       });
     }
 
