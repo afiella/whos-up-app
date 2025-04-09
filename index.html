@@ -8,7 +8,14 @@
   <script src="https://www.gstatic.com/firebasejs/11.6.0/firebase-app.js"></script>
   <script src="https://www.gstatic.com/firebasejs/11.6.0/firebase-database.js"></script>
   <script>
-    window.addEventListener("DOMContentLoaded", () => {
+    // Move selectColor outside so it's globally available
+window.selectColor = function(hex) {
+  document.getElementById("loginColor").value = hex;
+  [...document.querySelectorAll('#colorCircleOptions button')].forEach(btn => btn.classList.remove('ring-4', 'ring-offset-2', 'ring-gray-700'));
+  event.target.classList.add('ring-4', 'ring-offset-2', 'ring-gray-700');
+};
+
+window.addEventListener("DOMContentLoaded", () => {
       const firebaseConfig = {
         apiKey: "AIzaSyDkEKUzUhc-nKFLnF1w0MOm6qwpKHTpfaI",
         authDomain: "who-s-up-app.firebaseapp.com",
