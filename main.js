@@ -14,7 +14,7 @@ const db = firebase.database();
 const nameList = ["Archie", "Ella", "Veronica", "Dan", "Alex", "Adam", "Darryl", "Michael", "Tia", "Rob", "Jeremy", "Nassir", "Greg"];
 const colorList = [
   "#f87171", "#60a5fa", "#34d399", "#fbbf24", "#a78bfa",
-  "#f472b6", "#10b981", "#fb923c", "#4ade80", "#facc15", "#e879f9", "#38bdf8"
+  "#f472b6", "#10b981", "#fb923c", "#4ade80", "#facc15", "#e879f9", "#38bdf8", "#fcd34d"
 ];
 
 let currentRoom = window.location.pathname.includes("bh") ? "BH" : "59";
@@ -52,24 +52,40 @@ function selectName(name, color) {
     const activePlayers = Object.values(data)
       .filter(p => p.active && !p.skip)
       .sort((a, b) => a.joinedAt - b.joinedAt);
-    updateDisplay(activePlayers);
+    updateDisplay(activePlayers, data);
   });
 }
 
-function updateDisplay(players) {
+function updateDisplay(activePlayers, allPlayers) {
   queueDisplay.innerHTML = "";
-  players.forEach((p, i) => {
+  const allSorted = Object.values(allPlayers || {}).sort((a, b) => a.joinedAt - b.joinedAt);
+
+  allSorted.forEach((p, i) => {
+    let status = "Active";
+    let badgeColor = "bg-green-500";
+
+    if (!p.active) {
+      status = "Out";
+      badgeColor = "bg-red-500";
+    } else if (p.skip) {
+      status = "With Customer";
+      badgeColor = "bg-yellow-500";
+    }
+
     const div = document.createElement("div");
     div.innerHTML = `
-      <div class="flex items-center gap-2">
-        <span class="inline-block w-4 h-4 rounded-full" style="background-color: ${p.color}"></span>
-        <span>${i + 1}. ${p.name}</span>
+      <div class="flex items-center justify-between">
+        <div class="flex items-center gap-2">
+          <span class="inline-block w-4 h-4 rounded-full" style="background-color: ${p.color}"></span>
+          <span>${p.name}</span>
+        </div>
+        <span class="text-xs text-white px-2 py-1 rounded ${badgeColor}">${status}</span>
       </div>
     `;
     queueDisplay.appendChild(div);
   });
 
-  const next = players[0];
+  const next = activePlayers[0];
   const nextUpDiv = document.getElementById("nextUp");
   nextUpDiv.innerHTML = next
     ? `
@@ -84,12 +100,26 @@ function updateDisplay(players) {
 function setStatus(action) {
   if (!currentUser) return;
 
-  const updates = {
-    active: action === "active",
-    skip: action === "skip"
-  };
+  const userRef = db.ref(`rooms/${currentRoom}/players/${currentUser.name]`);
 
-  db.ref(`rooms/${currentRoom}/players/${currentUser.name}`).update(updates);
+  if (action === "active" || action === "skip") {
+    const updates = {
+      active: true,
+      skip: action === "skip",
+      joinedAt: Date.now()
+    };
+    userRef.update(updates);
+    currentUser = { ...currentUser, ...updates };
+  }
+
+  if (action === "inactive") {
+    const updates = {
+      active: false,
+      skip: false
+    };
+    userRef.update(updates);
+    currentUser = { ...currentUser, ...updates };
+  }
 }
 
 renderNameButtons();
