@@ -46,6 +46,11 @@
     }
 
     window.addEventListener("DOMContentLoaded", () => {
+  window.selectColor = function(hex) {
+    document.getElementById("loginColor").value = hex;
+    [...document.querySelectorAll('#colorCircleOptions button')].forEach(btn => btn.classList.remove('ring-4', 'ring-offset-2', 'ring-gray-700'));
+    event.target.classList.add('ring-4', 'ring-offset-2', 'ring-gray-700');
+  };
       document.getElementById("loginBtn").addEventListener("click", () => {
         const nameInput = document.getElementById("loginName").value.trim();
         const color = document.getElementById("loginColor").value;
@@ -71,6 +76,11 @@
         welcome.className = "text-lg font-semibold text-green-700 mb-2";
         welcome.textContent = `Welcome, ${capitalized} ${emoji}`;
         document.getElementById("mainApp").prepend(welcome);
+
+        // Show personal screen layout
+        document.getElementById("selfToggle").classList.remove("hidden");
+        document.getElementById("players").classList.remove("hidden");
+        document.getElementById("outPlayers").classList.remove("hidden");
 
         onValue(playersRef, (snapshot) => {
           const playersData = snapshot.val();
@@ -153,7 +163,14 @@
   <div id="loginScreen" class="hidden bg-white p-6 rounded-lg shadow-lg w-full max-w-md text-center">
     <h1 class="text-2xl font-bold mb-4">Join Who's Up</h1>
     <input id="loginName" type="text" placeholder="Your name" class="w-full p-2 border border-gray-300 rounded mb-2">
-    <input type="hidden" id="loginColor">
+    <div id="colorCircleOptions" class="flex justify-center flex-wrap gap-3 mb-4">
+  <button class="w-10 h-10 rounded-full border-2" style="background-color:#f87171" onclick="selectColor('#f87171')"></button>
+  <button class="w-10 h-10 rounded-full border-2" style="background-color:#60a5fa" onclick="selectColor('#60a5fa')"></button>
+  <button class="w-10 h-10 rounded-full border-2" style="background-color:#34d399" onclick="selectColor('#34d399')"></button>
+  <button class="w-10 h-10 rounded-full border-2" style="background-color:#fbbf24" onclick="selectColor('#fbbf24')"></button>
+  <button class="w-10 h-10 rounded-full border-2" style="background-color:#a78bfa" onclick="selectColor('#a78bfa')"></button>
+</div>
+<input type="hidden" id="loginColor">
     <div id="colorSelectContainer" class="flex justify-center flex-wrap gap-2 mb-4"></div>
     <button id="loginBtn" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">Join</button>
   </div>
@@ -162,11 +179,23 @@
     <div id="currentNextUpBox" class="border border-gray-300 p-2 rounded mb-4">
       Next: <span id="currentNextUp" class="font-semibold">No one</span>
     </div>
-    <div class="mb-4 hidden flex-col gap-2" id="selfToggle">
-      <button id="inBtn" class="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700" onclick="setRotationStatus('in')">In Rotation</button>
-      <button id="skipBtn" class="bg-yellow-500 text-white px-4 py-2 rounded hover:bg-yellow-600" onclick="setRotationStatus('skip')">Skip Me</button>
-      <button id="outBtn" class="bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600" onclick="setRotationStatus('out')">Out of Rotation</button>
+    <div class="mb-4 hidden flex-col gap-4" id="selfToggle">
+  <div class="flex justify-center gap-4">
+    <div class="flex flex-col items-center">
+      <button onclick="setRotationStatus('in')" class="w-14 h-14 rounded-full bg-green-500 text-white font-bold text-xs hover:bg-green-600 flex items-center justify-center">In</button>
+      <span class="text-xs mt-1">In Rotation</span>
     </div>
+    <div class="flex flex-col items-center">
+      <button onclick="setRotationStatus('skip')" class="w-14 h-14 rounded-full bg-yellow-400 text-white font-bold text-xs hover:bg-yellow-500 flex items-center justify-center">Skip</button>
+      <span class="text-xs mt-1">Skip Me</span>
+    </div>
+    <div class="flex flex-col items-center">
+      <button onclick="setRotationStatus('out')" class="w-14 h-14 rounded-full bg-red-500 text-white font-bold text-xs hover:bg-red-600 flex items-center justify-center">Out</button>
+      <span class="text-xs mt-1">Out of Rotation</span>
+    </div>
+  </div>
+</div>
+</div>
     <div>
       <h2 class="font-semibold text-left">Player Queue:</h2>
       <div id="players" class="space-y-2 text-left"></div>
