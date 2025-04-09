@@ -46,52 +46,30 @@
     });
 
     document.getElementById("adminLoginBtn").addEventListener("click", () => {
-      const adminPassword = document.getElementById("adminPassword").value;
-      if (adminPassword === "afiella") {
-        localStorage.setItem("currentUser", JSON.stringify({ role: "admin" }));
-        adminLoginScreen.classList.add("hidden");
-        mainApp.classList.remove("hidden");
-      document.getElementById("selfToggle").classList.remove("hidden");
-      onValue(playersRef, (snapshot) => {
-        const playersData = snapshot.val();
-        updateDisplay(playersData);
-      }, { onlyOnce: true });
+  const adminPassword = document.getElementById("adminPassword").value;
+  if (adminPassword === "afiella") {
+    const adminUser = { role: "admin" };
+    localStorage.setItem("currentUser", JSON.stringify(adminUser));
+    loggedInUser = adminUser;
 
-      // Show player control buttons if not admin
-      if (!loggedInUser.role || loggedInUser.role !== "admin") {
-        document.getElementById("selfToggle").classList.remove("hidden");
-      }
+    adminLoginScreen.classList.add("hidden");
+    mainApp.classList.remove("hidden");
+if (!loggedInUser.role) {
+  document.getElementById("selfToggle").classList.remove("hidden");
+  const nextUpBtn = document.querySelector("button[onclick='nextUp()']");
+  if (nextUpBtn) nextUpBtn.classList.add("hidden");
 
-        // Hide admin-only controls for players
-        const isAdmin = loggedInUser.role === 'admin';
-        const nextUpBtn = document.querySelector("button[onclick='nextUp()']");
-        if (!isAdmin && nextUpBtn) nextUpBtn.classList.add("hidden");
-
-        // Show welcome message
-        const name = loggedInUser.name?.toLowerCase();
-        if (name) {
-          const emoji = ['tia', 'veronica', 'ella'].includes(name) ? '♡' : '!';
-          const welcome = document.createElement("div");
-          welcome.className = "text-lg font-semibold text-green-700 mb-2";
-          welcome.textContent = `Welcome, ${loggedInUser.name} ${emoji}`;
-          document.getElementById("mainApp").prepend(welcome);
-        }
-      } else {
-        alert("Incorrect admin password.");
-      }
-    });
-
-    document.getElementById("loginBtn").addEventListener("click", () => {
-      const nameInput = document.getElementById("loginName").value.trim();
-      const colorSelect = document.getElementById("loginColor").value;
-      if (!nameInput || !colorSelect) return alert("Enter name and select a color.");
-      const capitalized = nameInput.charAt(0).toUpperCase() + nameInput.slice(1);
-      const newPlayer = { name: capitalized, color: colorSelect, active: true, skip: false };
-      set(ref(db, `players/${capitalized}`), newPlayer);
-      loggedInUser = newPlayer;
-      localStorage.setItem("currentUser", JSON.stringify(newPlayer));
-      loginScreen.classList.add("hidden");
-      mainApp.classList.remove("hidden");
+  const name = loggedInUser.name?.toLowerCase();
+  const emoji = ['tia', 'veronica', 'ella'].includes(name) ? '♡' : '!';
+  const welcome = document.createElement("div");
+  welcome.className = "text-lg font-semibold text-green-700 mb-2";
+  welcome.textContent = `Welcome, ${loggedInUser.name} ${emoji}`;
+  document.getElementById("mainApp").prepend(welcome);
+}
+onValue(playersRef, (snapshot) => {
+  const playersData = snapshot.val();
+  updateDisplay(playersData);
+});
     });
 
     function setRotationStatus(status) {
