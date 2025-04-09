@@ -5,101 +5,12 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Who's Up App</title>
   <script src="https://cdn.tailwindcss.com"></script>
-  <script src="https://www.gstatic.com/firebasejs/11.6.0/firebase-app.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/11.6.0/firebase-database.js"></script>
 </head>
-<body class="bg-gray-100 flex items-center justify-center min-h-screen p-4">
+<body class="bg-gray-100 flex items-center justify-center min-h-screen">
   <div class="bg-white p-6 rounded shadow-md w-full max-w-sm text-center">
-    <h1 class="text-xl font-bold mb-4">Who's Up App</h1>
-
-    <div id="roomSelect" class="mb-4 space-y-2">
-      <button onclick="joinRoom('BH')" class="w-full bg-blue-500 text-white py-2 rounded">Join BH</button>
-      <button onclick="joinRoom('59')" class="w-full bg-purple-500 text-white py-2 rounded">Join 59</button>
+    <h1 class="text-2xl font-bold mb-4">Who's Up App</h1>
+    <p class="mb-2">Select a room to join:</p>
+    <div class="space-y-4">
+      <a href="bh.html" class="block bg-blue-500 text-white py-2 rounded">Join BH</a>
+      <a href="59.html" class="block bg-purple-500 text-white py-2 rounded">Join 59</a>
     </div>
-
-    <div id="nameSelect" class="hidden space-y-2">
-      <p class="text-gray-700">Tap your name to join:</p>
-      <div id="nameButtons" class="flex flex-wrap justify-center gap-2"></div>
-    </div>
-
-    <div id="mainScreen" class="hidden">
-      <div class="mb-2 font-semibold text-green-600" id="welcomeMsg"></div>
-      <div class="border p-2 rounded mb-4">Next: <span id="currentNextUp">No one</span></div>
-      <div id="queue" class="space-y-1 mb-4"></div>
-
-      <div class="space-x-2">
-        <button onclick="toggleStatus(true)" class="bg-green-500 text-white px-3 py-1 rounded">Join</button>
-        <button onclick="toggleStatus(false)" class="bg-red-500 text-white px-3 py-1 rounded">Leave</button>
-      </div>
-    </div>
-  </div>
-
-  <script>
-    const firebaseConfig = {
-      apiKey: "AIzaSyDkEKUzUhc-nKFLnF1w0MOm6qwpKHTpfaI",
-      authDomain: "who-s-up-app.firebaseapp.com",
-      databaseURL: "https://who-s-up-app-default-rtdb.firebaseio.com",
-      projectId: "who-s-up-app",
-      storageBucket: "who-s-up-app.appspot.com",
-      messagingSenderId: "167292375113",
-      appId: "1:167292375113:web:ce718a1aab4852fe5daf98"
-    };
-
-    firebase.initializeApp(firebaseConfig);
-    const db = firebase.database();
-
-    const nameList = ["Archie", "Ella", "Veronica", "Dan", "Alex", "Adam", "Darryl", "Michael", "Tia", "Rob", "Jeremy", "Nassir"];
-    const colorList = ["#f87171", "#60a5fa", "#34d399", "#fbbf24", "#a78bfa", "#f472b6", "#10b981", "#fb923c", "#4ade80", "#93c5fd", "#facc15", "#f472b6"];
-
-    let currentRoom = null;
-    let currentUser = null;
-
-    function joinRoom(room) {
-      currentRoom = room;
-      document.getElementById("roomSelect").classList.add("hidden");
-      document.getElementById("nameSelect").classList.remove("hidden");
-
-      const nameButtons = document.getElementById("nameButtons");
-      nameButtons.innerHTML = "";
-      nameList.forEach((name, index) => {
-        const btn = document.createElement("button");
-        btn.className = "w-16 h-16 rounded-full text-white font-bold";
-        btn.style.backgroundColor = colorList[index];
-        btn.textContent = name;
-        btn.onclick = () => joinQueue(name, colorList[index]);
-        nameButtons.appendChild(btn);
-      });
-
-      db.ref(`rooms/${room}/players`).on("value", (snap) => {
-        const data = snap.val() || {};
-        const players = Object.values(data).filter(p => p.active);
-        document.getElementById("currentNextUp").textContent = players[0]?.name || "No one";
-
-        const queueDiv = document.getElementById("queue");
-        queueDiv.innerHTML = "";
-        players.forEach(p => {
-          const div = document.createElement("div");
-          div.className = "py-1 px-2 rounded text-white font-semibold";
-          div.style.backgroundColor = p.color;
-          div.textContent = p.name;
-          queueDiv.appendChild(div);
-        });
-      });
-    }
-    
-
-    function joinQueue(name, color) {
-      currentUser = name;
-      db.ref(`rooms/${currentRoom}/players/${name}`).set({ name, color, active: true });
-      document.getElementById("nameSelect").classList.add("hidden");
-      document.getElementById("mainScreen").classList.remove("hidden");
-      document.getElementById("welcomeMsg").textContent = `Welcome, ${name}!`;
-    }
-
-    function toggleStatus(isJoining) {
-      if (!currentUser || !currentRoom) return;
-      db.ref(`rooms/${currentRoom}/players/${currentUser}`).update({ active: isJoining });
-    }
-  </script>
-</body>
-</html>
