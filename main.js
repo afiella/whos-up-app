@@ -39,7 +39,8 @@ function renderNameButtons() {
 }
 
 function selectName(name, color) {
-  currentUser = { name, color, active: true, skip: false };
+  const joinedAt = Date.now();
+  currentUser = { name, color, active: true, skip: false, joinedAt };
   db.ref(`rooms/${currentRoom}/players/${name}`).set(currentUser);
   localStorage.setItem("currentUser", JSON.stringify(currentUser));
   nameSelectSection.classList.add("hidden");
@@ -48,7 +49,9 @@ function selectName(name, color) {
 
   db.ref(`rooms/${currentRoom}/players`).on("value", snapshot => {
     const data = snapshot.val() || {};
-    const activePlayers = Object.values(data).filter(p => p.active && !p.skip);
+    const activePlayers = Object.values(data)
+      .filter(p => p.active && !p.skip)
+      .sort((a, b) => a.joinedAt - b.joinedAt);
     updateDisplay(activePlayers);
   });
 }
