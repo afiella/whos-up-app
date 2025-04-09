@@ -4,8 +4,10 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Who's Up App</title>
-  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.tailwindcss.com">});
+</script>
   <script type="module">
+window.addEventListener("DOMContentLoaded", () => {
     import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-app.js";
     import { getDatabase, ref, onValue, set, update, remove } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-database.js";
 
@@ -50,9 +52,7 @@
   if (adminPassword === "afiella") {
     const adminUser = { role: "admin" };
     localStorage.setItem("currentUser", JSON.stringify(adminUser));
-    loggedInUser = adminUser;
-
-    adminLoginScreen.classList.add("hidden");
+    // Duplicate removed
     mainApp.classList.remove("hidden");
 
     const nextUpBtn = document.querySelector("button[onclick='nextUp()']");
@@ -182,7 +182,9 @@ onValue(playersRef, (snapshot) => {
         const container = document.createElement("div");
         container.className = "text-sm text-gray-700";
         if (pos !== -1) {
-          container.innerHTML = `<p class="font-medium">You’re up in <strong>${pos}</strong> turn(s)</p>`;
+  const turnText = pos === 0 ? "You're up next!" : `You’re up in ${pos} turn(s)`;
+  container.innerHTML = `<p class="font-medium">${turnText}</p>`;
+}</strong> turn(s)</p>`;
         } else {
           container.innerHTML = `<p class="text-red-500 font-medium">You are currently out of rotation.</p>`;
         }
@@ -314,7 +316,7 @@ onValue(playersRef, (snapshot) => {
       check.textContent = "✔";
       btn.appendChild(check);
     };
-    };
+    colorContainer.appendChild(btn);
     colorContainer.appendChild(btn);
   });
 });
