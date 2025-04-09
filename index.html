@@ -17,6 +17,19 @@ window.selectColor = function(hex) {
   document.getElementById("playerColor").value = hex;
   [...document.querySelectorAll('#colorCircleOptions button')].forEach(btn => btn.classList.remove('ring-4', 'ring-offset-2', 'ring-gray-700'));
   event.target.classList.add('ring-4', 'ring-offset-2', 'ring-gray-700');
+
+  // Add player to Firebase immediately
+  const name = document.getElementById("playerName").value.trim();
+  if (!name) {
+    alert("Please enter a name before selecting a color.");
+    return;
+  }
+  const capitalized = name.charAt(0).toUpperCase() + name.slice(1);
+  const newPlayer = { id: Date.now(), name: capitalized, color: hex, active: true };
+  firebase.database().ref(`rooms/${currentRoom}/players/${capitalized}`).set(newPlayer);
+  document.getElementById("playerName").value = "";
+  document.getElementById("playerColor").value = hex;
+  showConfirmation(`${capitalized} added!`);
 };
     const firebaseConfig = {
       apiKey: "AIzaSyDkEKUzUhc-nKFLnF1w0MOm6qwpKHTpfaI",
@@ -54,8 +67,8 @@ window.selectColor = function(hex) {
     <div id="currentNextUpBox" class="border border-gray-300 p-2 rounded mb-4">
       Next: <span id="currentNextUp" class="font-semibold">No one</span>
     </div>
-    <input type="text" id="playerName" placeholder="Enter Name"
-           class="w-full p-2 border border-gray-300 rounded mb-2 focus:outline-none focus:ring-2 focus:ring-blue-500" />
+    <input type="text" id="playerName" placeholder="Enter Name"$1>
+<div class="h-4"></div>
     <div id="colorCircleOptions" class="flex justify-center flex-wrap gap-3 mb-4">
   <button class="w-10 h-10 rounded-full border-2" style="background-color:#fca5a5" onclick="selectColor('#fca5a5')"></button>
   <button class="w-10 h-10 rounded-full border-2" style="background-color:#fdba74" onclick="selectColor('#fdba74')"></button>
