@@ -16,7 +16,9 @@ window.selectColor = function(hex) {
   }
   document.getElementById("playerColor").value = hex;
   [...document.querySelectorAll('#colorCircleOptions button')].forEach(btn => btn.classList.remove('ring-4', 'ring-offset-2', 'ring-gray-700'));
-  event.target.classList.add('ring-4', 'ring-offset-2', 'ring-gray-700');
+  const selectedButton = event.target.closest('button');
+  if (!selectedButton) return;
+  selectedButton.classList.add('ring-4', 'ring-offset-2', 'ring-gray-700');.classList.add('ring-4', 'ring-offset-2', 'ring-gray-700');
 
   // Add player to Firebase immediately
   const name = document.getElementById("playerName").value.trim();
