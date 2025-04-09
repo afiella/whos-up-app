@@ -31,6 +31,7 @@
       document.getElementById("roomButtons").classList.add("hidden");
       document.getElementById("nameSelect").classList.remove("hidden");
       firebase.database().ref(`rooms/${room}/players`).on("value", snapshot => {
+      document.getElementById("spinner").style.display = 'none';
         const data = snapshot.val() || {};
         players = Object.values(data).filter(p => p.active);
         outPlayers = Object.values(data).filter(p => !p.active);
@@ -75,21 +76,45 @@
       });
     }
   </script>
+<style>
+@keyframes pop {
+  0% { transform: scale(1); opacity: 0.3; }
+  50% { transform: scale(1.1); opacity: 1; }
+  100% { transform: scale(1); opacity: 1; }
+}
+.animate-pop {
+  animation: pop 0.5s ease-in-out;
+}
+.spinner {
+  border: 4px solid #f3f3f3;
+  border-top: 4px solid #3498db;
+  border-radius: 50%;
+  width: 40px;
+  height: 40px;
+  animation: spin 1s linear infinite;
+  margin: 20px auto;
+}
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+</style>
 </head>
-<body class="bg-gray-100 min-h-screen flex items-center justify-center p-4">
-  <div class="bg-white p-4 rounded shadow-md w-full max-w-sm">
+<body class="bg-gray-100 min-h-screen flex items-center justify-center p-4 w-full">
+  <div class="bg-white p-4 rounded shadow-md w-full max-w-sm mx-auto">
     <h1 class="text-xl font-bold text-center mb-4">Who's Up App</h1>
-    <div id="roomButtons" class="flex justify-center gap-4 mb-4">
-      <button onclick="selectRoom('BH')" class="bg-blue-500 text-white px-4 py-2 rounded">Join BH</button>
-      <button onclick="selectRoom('59')" class="bg-purple-500 text-white px-4 py-2 rounded">Join 59</button>
+    <div id="roomButtons" class="flex flex-wrap justify-center gap-4 mb-4">
+      <button onclick="selectRoom('BH'); return false;" class="bg-blue-500 text-white px-4 py-2 rounded">Join BH</button>
+      <button onclick="selectRoom('59'); return false;" class="bg-purple-500 text-white px-4 py-2 rounded">Join 59</button>
     </div>
 
     <div id="nameSelect" class="hidden">
+      <div id="spinner" class="spinner"></div>
       <p class="mb-2 text-center">Select your name:</p>
       <div class="flex flex-wrap gap-3 justify-center">
         <script>
           nameList.forEach((name, index) => {
-            document.write(`<button onclick=\"joinAsName('${name.charAt(0).toUpperCase() + name.slice(1)}','${nameColors[index]}')\" class=\"w-20 h-20 rounded-full text-white font-bold flex items-center justify-center\" style=\"background:${nameColors[index]}\">${name.charAt(0).toUpperCase() + name.slice(1)}</button>`);
+            document.write(`<button$1</button>`.replace('<button', '<button class=\"animate-pop\"'))
           });
         </script>
       </div>
