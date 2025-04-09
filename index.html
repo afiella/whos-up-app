@@ -1,210 +1,164 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Who's Up App</title>
-  <script src="https://cdn.tailwindcss.com"></script>
-  <script src="https://www.gstatic.com/firebasejs/11.6.0/firebase-app.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/11.6.0/firebase-database.js"></script>
-  <script>
-    // Move selectColor outside so it's globally available
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Rotation</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://www.gstatic.com/firebasejs/11.6.0/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/11.6.0/firebase-database.js"></script>
+  <script>
 window.selectColor = function(hex) {
-  document.getElementById("loginColor").value = hex;
+  const usedColors = players.concat(outPlayers).map(p => p.color);
+  if (usedColors.includes(hex)) {
+    alert("This color is already taken. Please choose another.");
+    return;
+  }
+  document.getElementById("playerColor").value = hex;
   [...document.querySelectorAll('#colorCircleOptions button')].forEach(btn => btn.classList.remove('ring-4', 'ring-offset-2', 'ring-gray-700'));
   event.target.classList.add('ring-4', 'ring-offset-2', 'ring-gray-700');
 };
-
-window.addEventListener("DOMContentLoaded", () => {
-      const firebaseConfig = {
-        apiKey: "AIzaSyDkEKUzUhc-nKFLnF1w0MOm6qwpKHTpfaI",
-        authDomain: "who-s-up-app.firebaseapp.com",
-        databaseURL: "https://who-s-up-app-default-rtdb.firebaseio.com",
-        projectId: "who-s-up-app",
-        storageBucket: "who-s-up-app.appspot.com",
-        messagingSenderId: "167292375113",
-        appId: "1:167292375113:web:ce718a1aab4852fe5daf98",
-        measurementId: "G-NPK2KV2CXY"
-      };
-
-      const app = firebase.initializeApp(firebaseConfig);
-      const db = firebase.database();
-
-      let currentRoom = null;
-      let playersRef;
-      let loggedInUser = JSON.parse(localStorage.getItem("currentUser")) || null;
-
-      window.selectColor = function(hex) {
-        document.getElementById("loginColor").value = hex;
-        [...document.querySelectorAll('#colorCircleOptions button')].forEach(btn => btn.classList.remove('ring-4', 'ring-offset-2', 'ring-gray-700'));
-        event.target.classList.add('ring-4', 'ring-offset-2', 'ring-gray-700');
-      };
-
-      window.selectRoom = function(roomCode) {
-        currentRoom = roomCode;
-        playersRef = firebase.database().ref(`rooms/${roomCode}/players`);
-        document.getElementById("roleSelectScreen").classList.add("hidden");
-        document.getElementById("loginScreen").classList.remove("hidden");
-
-        playersRef.on("value", (snapshot) => {
-          const playersData = snapshot.val();
-          updateDisplay(playersData);
-        });
-      };
-
-      document.getElementById("loginBtn").addEventListener("click", () => {
-        const nameInput = document.getElementById("loginName").value.trim();
-        const color = document.getElementById("loginColor").value;
-
-        if (!nameInput || !color) {
-          alert("Please enter your name and select a color.");
-          return;
-        }
-
-        const capitalized = nameInput.charAt(0).toUpperCase() + nameInput.slice(1);
-        const newPlayer = { name: capitalized, color: color, active: true, skip: false };
-
-        firebase.database().ref(`rooms/${currentRoom}/players/${capitalized}`).set(newPlayer);
-        loggedInUser = newPlayer;
-        localStorage.setItem("currentUser", JSON.stringify(newPlayer));
-
-        document.getElementById("loginScreen").classList.add("hidden");
-        document.getElementById("mainApp").classList.remove("hidden");
-        document.getElementById("selfToggle").classList.remove("hidden");
-
-        const emoji = ['tia', 'veronica', 'ella'].includes(capitalized.toLowerCase()) ? '♡' : '!';
-        const welcome = document.createElement("div");
-        welcome.className = "text-lg font-semibold text-green-700 mb-2";
-        welcome.textContent = `Welcome, ${capitalized} ${emoji}`;
-        document.getElementById("mainApp").prepend(welcome);
-
-        document.getElementById("selfToggle").classList.remove("hidden");
-        document.getElementById("players").classList.remove("hidden");
-        document.getElementById("outPlayers").classList.remove("hidden");
-      });
-
-      window.setRotationStatus = function(status) {
-        const userRef = firebase.database().ref(`rooms/${currentRoom}/players/${loggedInUser.name}`);
-        if (status === 'in') {
-          userRef.update({ active: true, skip: false });
-        } else if (status === 'out') {
-          userRef.update({ active: false, skip: false });
-        } else if (status === 'skip') {
-          userRef.update({ skip: true });
-        }
-      };
-
-      function updateDisplay(playersObj) {
-        const players = Object.values(playersObj || {}).filter(p => p.active);
-        const nextPlayer = players[0]?.name || null;
-        const outPlayers = Object.values(playersObj || {}).filter(p => !p.active);
-        document.getElementById("players").innerHTML = "";
-
-        if (loggedInUser?.name) {
-          const pos = players.findIndex(p => p.name === loggedInUser.name);
-          const container = document.createElement("div");
-          container.className = "text-sm text-gray-700";
-          container.innerHTML = pos !== -1
-            ? `<p class="font-medium">${pos === 0 ? "You're up next!" : `You’re up in ${pos} turn(s)`}</p>`
-            : `<p class="text-red-500 font-medium">You are currently out of rotation.</p>`;
-          document.getElementById("players").appendChild(container);
-        }
-
-        document.getElementById("currentNextUp").textContent = nextPlayer || "No one";
-        const isUp = loggedInUser?.name === nextPlayer;
-        const nextBox = document.getElementById("currentNextUpBox");
-        nextBox.style.borderColor = isUp ? "#22c55e" : "#d1d5db";
-        nextBox.classList.remove("animate-pop");
-        if (isUp) {
-          void nextBox.offsetWidth;
-          nextBox.classList.add("animate-pop");
-        }
-
-        const outPlayersDiv = document.getElementById("outPlayers");
-        outPlayersDiv.innerHTML = "";
-        outPlayers.forEach(player => {
-          const div = document.createElement("div");
-          div.className = "flex items-center space-x-4 p-2 rounded";
-          div.style.backgroundColor = player.color;
-          div.innerHTML = `
-            <div class="w-10 h-10 rounded-full flex items-center justify-center text-white font-bold" style="background-color: ${player.color}">
-              ${player.name.charAt(0)}
-            </div>
-            <span>${player.name}</span>
-          `;
-          outPlayersDiv.appendChild(div);
-        });
-      }
-
-      window.logout = function() {
-        localStorage.clear();
-        location.reload();
-      };
-    });
-  </script>
-  <style>
-    @keyframes pop {
-      0% { transform: scale(1); }
-      50% { transform: scale(1.08); }
-      100% { transform: scale(1); }
-    }
-    .animate-pop { animation: pop 0.5s ease-in-out; }
-  </style>
+    const firebaseConfig = {
+      apiKey: "AIzaSyDkEKUzUhc-nKFLnF1w0MOm6qwpKHTpfaI",
+      authDomain: "who-s-up-app.firebaseapp.com",
+      databaseURL: "https://who-s-up-app-default-rtdb.firebaseio.com",
+      projectId: "who-s-up-app",
+      storageBucket: "who-s-up-app.appspot.com",
+      messagingSenderId: "167292375113",
+      appId: "1:167292375113:web:ce718a1aab4852fe5daf98"
+    };
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.database();
+    let currentRoom = "BH";
+  </script>
+  <style>
+    .player {
+      transition: transform 0.3s ease, opacity 0.3s ease;
+    }
+    .drag-over {
+      border: 2px dashed #3b82f6;
+      background-color: #e0f2fe;
+      margin: 10px 0;
+      padding: 20px;
+      transition: all 0.2s ease;
+    }
+  </style>
 </head>
 <body class="bg-gray-100 flex justify-center items-start min-h-screen py-10">
-  <div id="roleSelectScreen" class="bg-white p-6 rounded-lg shadow-lg w-full max-w-md text-center">
-    <h1 class="text-2xl font-bold mb-4">Who's Up App</h1>
-    <p class="mb-2">Select your room</p>
-    <div class="flex gap-4 justify-center mb-4">
-      <button onclick="selectRoom('BH')" class="bg-blue-500 text-white px-4 py-2 rounded">Join BH</button>
-      <button onclick="selectRoom('59')" class="bg-purple-500 text-white px-4 py-2 rounded">Join 59</button>
-    </div>
-  </div>
-  <div id="loginScreen" class="hidden bg-white p-6 rounded-lg shadow-lg w-full max-w-md text-center">
-    <h1 class="text-2xl font-bold mb-4">Join Who's Up</h1>
-    <input id="loginName" type="text" placeholder="Your name" class="w-full p-2 border border-gray-300 rounded mb-2">
-    <div id="colorCircleOptions" class="flex justify-center flex-wrap gap-3 mb-4">
-      <button class="w-10 h-10 rounded-full border-2" style="background-color:#f87171" onclick="selectColor('#f87171')"></button>
-      <button class="w-10 h-10 rounded-full border-2" style="background-color:#60a5fa" onclick="selectColor('#60a5fa')"></button>
-      <button class="w-10 h-10 rounded-full border-2" style="background-color:#34d399" onclick="selectColor('#34d399')"></button>
-      <button class="w-10 h-10 rounded-full border-2" style="background-color:#fbbf24" onclick="selectColor('#fbbf24')"></button>
-      <button class="w-10 h-10 rounded-full border-2" style="background-color:#a78bfa" onclick="selectColor('#a78bfa')"></button>
-    </div>
-    <input type="hidden" id="loginColor">
-    <button id="loginBtn" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">Join</button>
-  </div>
-  <div id="mainApp" class="hidden bg-white p-6 rounded-lg shadow-lg w-full max-w-md text-center">
-    <h1 class="text-2xl font-bold mb-4">Who's Up</h1>
-    <div id="currentNextUpBox" class="border border-gray-300 p-2 rounded mb-4">
-      Next: <span id="currentNextUp" class="font-semibold">No one</span>
-    </div>
-    <div class="mb-4 hidden flex-col gap-4" id="selfToggle">
-      <div class="flex justify-center gap-4">
-        <div class="flex flex-col items-center">
-          <button onclick="setRotationStatus('in')" class="w-14 h-14 rounded-full bg-green-500 text-white font-bold text-xs hover:bg-green-600 flex items-center justify-center">In</button>
-          <span class="text-xs mt-1">In Rotation</span>
-        </div>
-        <div class="flex flex-col items-center">
-          <button onclick="setRotationStatus('skip')" class="w-14 h-14 rounded-full bg-yellow-400 text-white font-bold text-xs hover:bg-yellow-500 flex items-center justify-center">Skip</button>
-          <span class="text-xs mt-1">Skip Me</span>
-        </div>
-        <div class="flex flex-col items-center">
-          <button onclick="setRotationStatus('out')" class="w-14 h-14 rounded-full bg-red-500 text-white font-bold text-xs hover:bg-red-600 flex items-center justify-center">Out</button>
-          <span class="text-xs mt-1">Out of Rotation</span>
-        </div>
-      </div>
-    </div>
-    <div>
-      <h2 class="font-semibold text-left">Player Queue:</h2>
-      <div id="players" class="space-y-2 text-left"></div>
-    </div>
-    <div class="mt-4 space-x-2">
-      <button onclick="logout()" class="bg-gray-500 text-white px-4 py-2 rounded hover:bg-gray-600">Log Out</button>
-    </div>
-    <div class="mt-6 text-left">
-      <h2 class="font-semibold">Out of Rotation:</h2>
-      <div id="outPlayers" class="space-y-2 mt-2"></div>
-    </div>
-  </div>
+  <div class="bg-white p-6 rounded-lg shadow-lg w-full max-w-md text-center">
+    <h1 class="text-2xl font-bold mb-4">Rotation</h1>
+    <div class="flex gap-4 justify-center mb-4">
+      <button onclick="switchRoom('BH')" class="bg-blue-500 text-white px-4 py-2 rounded">Join BH</button>
+      <button onclick="switchRoom('59')" class="bg-purple-500 text-white px-4 py-2 rounded">Join 59</button>
+    </div>
+    <div id="currentNextUpBox" class="border border-gray-300 p-2 rounded mb-4">
+      Next: <span id="currentNextUp" class="font-semibold">No one</span>
+    </div>
+    <input type="text" id="playerName" placeholder="Enter Name"
+           class="w-full p-2 border border-gray-300 rounded mb-2 focus:outline-none focus:ring-2 focus:ring-blue-500" />
+    <div id="colorCircleOptions" class="flex justify-center flex-wrap gap-3 mb-4">
+  <button class="w-10 h-10 rounded-full border-2" style="background-color:#fca5a5" onclick="selectColor('#fca5a5')"></button>
+  <button class="w-10 h-10 rounded-full border-2" style="background-color:#fdba74" onclick="selectColor('#fdba74')"></button>
+  <button class="w-10 h-10 rounded-full border-2" style="background-color:#fde68a" onclick="selectColor('#fde68a')"></button>
+  <button class="w-10 h-10 rounded-full border-2" style="background-color:#bbf7d0" onclick="selectColor('#bbf7d0')"></button>
+  <button class="w-10 h-10 rounded-full border-2" style="background-color:#bfdbfe" onclick="selectColor('#bfdbfe')"></button>
+  <button class="w-10 h-10 rounded-full border-2" style="background-color:#ddd6fe" onclick="selectColor('#ddd6fe')"></button>
+</div>
+<input type="hidden" id="playerColor">
+    <div id="confirmation" class="text-green-600 text-sm h-4 mb-2"></div>
+    <div>
+      <h2 class="font-semibold text-left">Player Queue:</h2>
+      <div id="players" class="space-y-2 text-left"></div>
+    </div>
+    <div class="mt-4 space-x-2">
+      <button onclick="nextUp()" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">Next Up</button>
+      <button onclick="resetPlayers()" class="bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600">Reset Players</button>
+    </div>
+    <div class="mt-6 text-left">
+      <h2 class="font-semibold">Out of Rotation:</h2>
+      <div id="outPlayers" class="space-y-2 mt-2"></div>
+    </div>
+  </div>
+
+  <script>
+    let players = [];
+    let outPlayers = [];
+    const playersDiv = document.getElementById("players");
+    const outPlayersDiv = document.getElementById("outPlayers");
+    const currentNextUpSpan = document.getElementById("currentNextUp");
+    const confirmation = document.getElementById("confirmation");
+
+    function switchRoom(room) {
+      currentRoom = room;
+      firebase.database().ref(`rooms/${currentRoom}/players`).on("value", snapshot => {
+        const data = snapshot.val() || {};
+        players = Object.values(data).filter(p => p.active);
+        outPlayers = Object.values(data).filter(p => !p.active);
+        updateDisplay();
+      });
+    }
+
+    document.getElementById("playerName").addEventListener("keyup", (e) => {
+      if (e.key === "Enter") addPlayer();
+    });
+
+    function addPlayer() {
+      const input = document.getElementById("playerName");
+      const color = document.getElementById("playerColor").value;
+      const name = input.value.trim();
+      if (!name) return;
+      const capitalized = name.charAt(0).toUpperCase() + name.slice(1);
+      const newPlayer = { id: Date.now(), name: capitalized, color: color, active: true };
+      firebase.database().ref(`rooms/${currentRoom}/players/${capitalized}`).set(newPlayer);
+      input.value = "";
+      input.focus();
+      showConfirmation(`${capitalized} added!`);
+    }
+
+    function showConfirmation(message) {
+      confirmation.textContent = message;
+      setTimeout(() => (confirmation.textContent = ""), 1500);
+    }
+
+    function updateDisplay() {
+      playersDiv.innerHTML = "";
+      players.forEach((player) => {
+        const playerDiv = document.createElement("div");
+        playerDiv.className = "player flex justify-between items-center px-4 py-2 rounded cursor-pointer";
+        playerDiv.style.backgroundColor = player.color || "#f3f4f6";
+        playerDiv.innerHTML = `<span>${player.name}</span>`;
+        playersDiv.appendChild(playerDiv);
+      });
+      currentNextUpSpan.textContent = players.length > 0 ? players[0].name : "No one";
+
+      outPlayersDiv.innerHTML = "";
+      outPlayers.forEach((player) => {
+  const outDiv = document.createElement("div");
+  outDiv.className = "flex justify-between items-center px-4 py-2 rounded cursor-pointer";
+  outDiv.style.backgroundColor = player.color || "#e5e7eb";
+  outDiv.innerHTML = `<span>${player.name}</span> <button onclick="rejoinPlayer('${player.name}')" class="ml-4 px-2 py-1 bg-green-600 text-white rounded text-xs">Rejoin</button>`;
+  outPlayersDiv.appendChild(outDiv);
+      });
+    }
+
+    function nextUp() {
+      if (players.length === 0) return alert("No players in the queue.");
+      const [first, ...rest] = players;
+      rest.push(first);
+      const updates = {};
+      rest.forEach(p => updates[p.name] = p);
+      updates[first.name] = first;
+      firebase.database().ref(`rooms/${currentRoom}/players`).set(updates);
+    }
+
+    function rejoinPlayer(name) {
+  const playerRef = firebase.database().ref(`rooms/${currentRoom}/players/${name}`);
+  playerRef.update({ active: true });
+}
+
+function resetPlayers() {
+      firebase.database().ref(`rooms/${currentRoom}/players`).set({});
+    }
+  </script>
 </body>
 </html>
