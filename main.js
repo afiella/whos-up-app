@@ -27,8 +27,19 @@ let currentUser = null;
 
 document.addEventListener("DOMContentLoaded", () => {
   const nameButtons = document.getElementById("nameButtons");
-  if (!nameButtons) return;
+  const mainScreen = document.getElementById("mainScreen");
+  const nameSelect = document.getElementById("nameSelect");
+  const welcomeMsg = document.getElementById("welcomeMsg");
+  const currentNextUp = document.getElementById("currentNextUp");
+  const queueDiv = document.getElementById("queue");
 
+  if (!nameButtons || !mainScreen || !nameSelect || !welcomeMsg || !currentNextUp || !queueDiv) {
+    console.warn("Missing required DOM elements for the queue app.");
+    return;
+  }
+
+  // Create name buttons
+  nameButtons.innerHTML = "";
   nameList.forEach((name, i) => {
     const btn = document.createElement("button");
     btn.className = "w-16 h-16 rounded-full text-white font-bold";
@@ -38,22 +49,20 @@ document.addEventListener("DOMContentLoaded", () => {
     nameButtons.appendChild(btn);
   });
 
+  // Listen to database changes
   const playersRef = db.ref(`rooms/${currentRoom}/players`);
   playersRef.on("value", (snapshot) => {
     const data = snapshot.val() || {};
     const players = Object.values(data).filter(p => p.active);
-    const queueDiv = document.getElementById("queue");
-    const nextUp = document.getElementById("currentNextUp");
-
-    if (queueDiv) queueDiv.innerHTML = "";
-    if (nextUp) nextUp.textContent = players[0]?.name || "No one";
+    queueDiv.innerHTML = "";
+    currentNextUp.textContent = players[0]?.name || "No one";
 
     players.forEach(p => {
       const div = document.createElement("div");
       div.className = "py-1 px-2 rounded text-white font-semibold";
       div.style.backgroundColor = p.color;
       div.textContent = p.name;
-      if (queueDiv) queueDiv.appendChild(div);
+      queueDiv.appendChild(div);
     });
   });
 });
