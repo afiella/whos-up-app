@@ -52,6 +52,11 @@
         adminLoginScreen.classList.add("hidden");
         mainApp.classList.remove("hidden");
 
+      // Show player control buttons if not admin
+      if (!loggedInUser.role || loggedInUser.role !== "admin") {
+        document.getElementById("selfToggle").classList.remove("hidden");
+      }
+
         // Hide admin-only controls for players
         const isAdmin = loggedInUser.role === 'admin';
         const nextUpBtn = document.querySelector("button[onclick='nextUp()']");
@@ -135,6 +140,12 @@
       });
 
       currentNextUpSpan.textContent = nextPlayer || "No one";
+
+      // Also update the selfToggle display if user is a player
+      if (loggedInUser?.name && !loggedInUser.role) {
+        const isUp = loggedInUser.name === nextPlayer;
+        document.getElementById("currentNextUpBox").style.borderColor = isUp ? "#22c55e" : "#d1d5db";
+      }
 
       outPlayersDiv.innerHTML = "";
       outPlayers.forEach(player => {
