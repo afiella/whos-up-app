@@ -4,12 +4,20 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Who's Up App</title>
-  <script src="https://cdn.tailwindcss.com">});
+  <script src="https://cdn.tailwindcss.com">function logout() {
+  localStorage.clear();
+  location.reload();
+}
 </script>
-  <script>
 
-    <script src="https://www.gstatic.com/firebasejs/11.6.0/firebase-app.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/11.6.0/firebase-database.js"></script>
+function logout() {
+  localStorage.clear();
+  location.reload();
+}
+</script>
+  <script src="https://www.gstatic.com/firebasejs/11.6.0/firebase-app.js"></script>
+<script src="https://www.gstatic.com/firebasejs/11.6.0/firebase-database.js"></script>
+<script>
 
     const firebaseConfig = {
       apiKey: "AIzaSyDkEKUzUhc-nKFLnF1w0MOm6qwpKHTpfaI",
@@ -306,7 +314,7 @@ onValue(playersRef, (snapshot) => {
       <div id="players" class="space-y-2 text-left"></div>
     </div>
     <div class="mt-4 space-x-2">
-      <button onclick="() => { localStorage.clear(); location.reload(); }" class="bg-gray-500 text-white px-4 py-2 rounded hover:bg-gray-600">Log Out</button>
+      <button onclick="logout()" class="bg-gray-500 text-white px-4 py-2 rounded hover:bg-gray-600">Log Out</button>
     </div>
     <div class="mt-6 text-left">
       <h2 class="font-semibold">Out of Rotation:</h2>
