@@ -3,217 +3,255 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Rotation</title>
+  <title>Who's Up App</title>
   <script src="https://cdn.tailwindcss.com"></script>
-  <style>
-    .player {
-      transition: transform 0.3s ease, opacity 0.3s ease;
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-app.js";
+    import { getDatabase, ref, onValue, set, update, remove } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-database.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyDkEKUzUhc-nKFLnF1w0MOm6qwpKHTpfaI",
+      authDomain: "who-s-up-app.firebaseapp.com",
+      databaseURL: "https://who-s-up-app-default-rtdb.firebaseio.com",
+      projectId: "who-s-up-app",
+      storageBucket: "who-s-up-app.appspot.com",
+      messagingSenderId: "167292375113",
+      appId: "1:167292375113:web:ce718a1aab4852fe5daf98",
+      measurementId: "G-NPK2KV2CXY"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getDatabase(app);
+    const playersRef = ref(db, 'players');
+
+    const loginScreen = document.getElementById("loginScreen");
+    const adminLoginScreen = document.getElementById("adminLoginScreen");
+    const roleSelectScreen = document.getElementById("roleSelectScreen");
+    const mainApp = document.getElementById("mainApp");
+    const playersDiv = document.getElementById("players");
+    const outPlayersDiv = document.getElementById("outPlayers");
+    const currentNextUpSpan = document.getElementById("currentNextUp");
+
+    const allColors = ["#fca5a5", "#fdba74", "#fde68a", "#bbf7d0", "#bfdbfe", "#ddd6fe"];
+    let loggedInUser = JSON.parse(localStorage.getItem("currentUser")) || null;
+
+    document.getElementById("playerRoleBtn").addEventListener("click", () => {
+      roleSelectScreen.classList.add("hidden");
+      loginScreen.classList.remove("hidden");
+    });
+
+    document.getElementById("adminRoleBtn").addEventListener("click", () => {
+      roleSelectScreen.classList.add("hidden");
+      adminLoginScreen.classList.remove("hidden");
+    });
+
+    document.getElementById("adminLoginBtn").addEventListener("click", () => {
+      const adminPassword = document.getElementById("adminPassword").value;
+      if (adminPassword === "afiella") {
+        localStorage.setItem("currentUser", JSON.stringify({ role: "admin" }));
+        adminLoginScreen.classList.add("hidden");
+        mainApp.classList.remove("hidden");
+
+        // Hide admin-only controls for players
+        const isAdmin = loggedInUser.role === 'admin';
+        const nextUpBtn = document.querySelector("button[onclick='nextUp()']");
+        if (!isAdmin && nextUpBtn) nextUpBtn.classList.add("hidden");
+
+        // Show welcome message
+        const name = loggedInUser.name?.toLowerCase();
+        if (name) {
+          const emoji = ['tia', 'veronica', 'ella'].includes(name) ? '♡' : '!';
+          const welcome = document.createElement("div");
+          welcome.className = "text-lg font-semibold text-green-700 mb-2";
+          welcome.textContent = `Welcome, ${loggedInUser.name} ${emoji}`;
+          document.getElementById("mainApp").prepend(welcome);
+        }
+      } else {
+        alert("Incorrect admin password.");
+      }
+    });
+
+    document.getElementById("loginBtn").addEventListener("click", () => {
+      const nameInput = document.getElementById("loginName").value.trim();
+      const colorSelect = document.getElementById("loginColor").value;
+      if (!nameInput || !colorSelect) return alert("Enter name and select a color.");
+      const capitalized = nameInput.charAt(0).toUpperCase() + nameInput.slice(1);
+      const newPlayer = { name: capitalized, color: colorSelect, active: true, skip: false };
+      set(ref(db, `players/${capitalized}`), newPlayer);
+      loggedInUser = newPlayer;
+      localStorage.setItem("currentUser", JSON.stringify(newPlayer));
+      loginScreen.classList.add("hidden");
+      mainApp.classList.remove("hidden");
+    });
+
+    function setRotationStatus(status) {
+      const userRef = ref(db, `players/${loggedInUser.name}`);
+      if (status === 'in') {
+        update(userRef, { active: true, skip: false });
+      } else if (status === 'out') {
+        update(userRef, { active: false, skip: false });
+      } else if (status === 'skip') {
+        update(userRef, { skip: true });
+      }
     }
-    .drag-over {
-      border: 2px dashed #3b82f6;
-      background-color: #e0f2fe;
-      margin: 10px 0;
-      padding: 20px;
-      transition: all 0.2s ease;
+
+    function nextUp() {
+      onValue(playersRef, (snapshot) => {
+        const all = Object.values(snapshot.val() || {});
+        const players = all.filter(p => p.active && !p.skip);
+        if (players.length > 0) {
+          const first = players.shift();
+          players.push(first);
+          const updates = {};
+          players.forEach(p => updates[`players/${p.name}`] = { ...p, skip: false });
+          update(ref(db), updates);
+        }
+      }, { onlyOnce: true });
+    }
+
+    onValue(playersRef, (snapshot) => {
+      const playersData = snapshot.val();
+      updateDisplay(playersData);
+    });
+
+    function updateDisplay(playersObj) {
+      const players = Object.values(playersObj || {}).filter(p => p.active);
+      const outPlayers = Object.values(playersObj || {}).filter(p => !p.active);
+      playersDiv.innerHTML = "";
+
+      const nextPlayer = players[0]?.name;
+
+      players.forEach((player, index) => {
+        const div = document.createElement("div");
+        div.className = `player flex items-center space-x-4 p-2 rounded ${player.name === nextPlayer ? 'bg-blue-100' : 'bg-gray-100 opacity-60'} ${index === 0 ? 'slide-out' : 'slide-in'}`;
+        div.style.backgroundColor = player.color;
+        div.innerHTML = `
+          <div class="w-10 h-10 rounded-full flex items-center justify-center text-white font-bold" style="background-color: ${player.color}">
+            ${player.name.charAt(0)}
+          </div>
+          <span>${player.name}</span>
+        `;
+        playersDiv.appendChild(div);
+      });
+
+      currentNextUpSpan.textContent = nextPlayer || "No one";
+
+      outPlayersDiv.innerHTML = "";
+      outPlayers.forEach(player => {
+        const div = document.createElement("div");
+        div.className = "flex items-center space-x-4 p-2 rounded";
+        div.style.backgroundColor = player.color;
+        div.innerHTML = `
+          <div class="w-10 h-10 rounded-full flex items-center justify-center text-white font-bold" style="background-color: ${player.color}">
+            ${player.name.charAt(0)}
+          </div>
+          <span>${player.name}</span>
+        `;
+        outPlayersDiv.appendChild(div);
+      });
+    }
+  </script>
+
+  <style>
+    @keyframes slideLeft {
+      0% { transform: translateX(0); opacity: 1; }
+      100% { transform: translateX(-100%); opacity: 0; }
+    }
+    @keyframes slideIn {
+      0% { transform: translateX(100%); opacity: 0; }
+      100% { transform: translateX(0); opacity: 1; }
+    }
+    .slide-out {
+      animation: slideLeft 0.4s forwards;
+    }
+    .slide-in {
+      animation: slideIn 0.4s forwards;
+    }
+    @media screen and (max-width: 640px) {
+      .player {
+        flex-direction: column;
+        align-items: flex-start;
+      }
+      .player span {
+        font-size: 0.875rem;
+      }
     }
   </style>
 </head>
 <body class="bg-gray-100 flex justify-center items-start min-h-screen py-10">
-  <div class="bg-white p-6 rounded-lg shadow-lg w-full max-w-md text-center">
-    <h1 class="text-2xl font-bold mb-4">Rotation</h1>
+  <!-- ROLE SELECT -->
+  <div id="roleSelectScreen" class="bg-white p-6 rounded-lg shadow-lg w-full max-w-md text-center">
+    <h1 class="text-2xl font-bold mb-4">Who's Up App</h1>
+    <button id="playerRoleBtn" class="bg-blue-500 text-white w-full py-2 rounded mb-2">Join as Player</button>
+    <button id="adminRoleBtn" class="bg-purple-500 text-white w-full py-2 rounded">Login as Admin</button>
+  </div>
+
+  <!-- PLAYER LOGIN -->
+  <div id="loginScreen" class="hidden bg-white p-6 rounded-lg shadow-lg w-full max-w-md text-center">
+    <h1 class="text-2xl font-bold mb-4">Join Who's Up</h1>
+    <input id="loginName" type="text" placeholder="Your name" class="w-full p-2 border border-gray-300 rounded mb-2">
+    <div id="colorSelectContainer" class="flex justify-center flex-wrap gap-2 mb-4">
+  <input type="hidden" id="loginColor" />
+  <script>
+    const colorContainer = document.getElementById("colorSelectContainer");
+    const hiddenColorInput = document.getElementById("loginColor");
+    const colorOptions = [
+      { color: "#fca5a5", label: "Soft Red" },
+      { color: "#fdba74", label: "Soft Orange" },
+      { color: "#fde68a", label: "Soft Yellow" },
+      { color: "#bbf7d0", label: "Soft Green" },
+      { color: "#bfdbfe", label: "Soft Blue" },
+      { color: "#ddd6fe", label: "Soft Purple" }
+    ];
+
+    colorOptions.forEach(opt => {
+      const btn = document.createElement("button");
+      btn.className = "w-10 h-10 rounded-full border-2 border-gray-300 hover:scale-105 transition-transform";
+      btn.style.backgroundColor = opt.color;
+      btn.title = opt.label;
+      btn.onclick = (e) => {
+        e.preventDefault();
+        hiddenColorInput.value = opt.color;
+        document.querySelectorAll("#colorSelectContainer button").forEach(b => b.classList.remove("ring-4", "ring-offset-2", "ring-gray-500"));
+        btn.classList.add("ring-4", "ring-offset-2", "ring-gray-500");
+      };
+      colorContainer.appendChild(btn);
+    });
+  </script>
+</div>
+    <button id="loginBtn" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">Join</button>
+  </div>
+
+  <!-- ADMIN LOGIN -->
+  <div id="adminLoginScreen" class="hidden bg-white p-6 rounded-lg shadow-lg w-full max-w-md text-center">
+    <h1 class="text-2xl font-bold mb-4">Admin Login</h1>
+    <input id="adminPassword" type="password" placeholder="Enter admin password" class="w-full p-2 border border-gray-300 rounded mb-4">
+    <button id="adminLoginBtn" class="bg-purple-600 text-white px-4 py-2 rounded hover:bg-purple-700">Login</button>
+  </div>
+
+  <!-- MAIN APP -->
+  <div id="mainApp" class="hidden bg-white p-6 rounded-lg shadow-lg w-full max-w-md text-center">
+    <h1 class="text-2xl font-bold mb-4">Who's Up</h1>
     <div id="currentNextUpBox" class="border border-gray-300 p-2 rounded mb-4">
       Next: <span id="currentNextUp" class="font-semibold">No one</span>
     </div>
-    <input type="text" id="playerName" placeholder="Enter Name"
-           class="w-full p-2 border border-gray-300 rounded mb-2 focus:outline-none focus:ring-2 focus:ring-blue-500" />
-
-    <select id="playerColor" class="w-full p-2 border border-gray-300 rounded mb-4">
-      <option value="#fca5a5">Soft Red</option>
-      <option value="#fdba74">Soft Orange</option>
-      <option value="#fde68a">Soft Yellow</option>
-      <option value="#bbf7d0">Soft Green</option>
-      <option value="#bfdbfe">Soft Blue</option>
-      <option value="#ddd6fe">Soft Purple</option>
-    </select>
-
-    <div id="confirmation" class="text-green-600 text-sm h-4 mb-2"></div>
+    <div class="mb-4 hidden flex-col gap-2" id="selfToggle">
+      <button id="inBtn" class="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700" onclick="setRotationStatus('in')">In Rotation</button>
+      <button id="skipBtn" class="bg-yellow-500 text-white px-4 py-2 rounded hover:bg-yellow-600" onclick="setRotationStatus('skip')">Skip Me</button>
+      <button id="outBtn" class="bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600" onclick="setRotationStatus('out')">Out of Rotation</button>
+    </div>
     <div>
       <h2 class="font-semibold text-left">Player Queue:</h2>
       <div id="players" class="space-y-2 text-left"></div>
     </div>
     <div class="mt-4 space-x-2">
       <button onclick="nextUp()" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">Next Up</button>
-      <button onclick="resetPlayers()" class="bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600">Reset Players</button>
+      <button onclick="() => { localStorage.clear(); location.reload(); }" class="bg-gray-500 text-white px-4 py-2 rounded hover:bg-gray-600">Log Out</button>
     </div>
     <div class="mt-6 text-left">
       <h2 class="font-semibold">Out of Rotation:</h2>
       <div id="outPlayers" class="space-y-2 mt-2"></div>
     </div>
   </div>
-
-  <script>
-    let players = JSON.parse(localStorage.getItem("playersQueue")) || [];
-    let outPlayers = JSON.parse(localStorage.getItem("outQueue")) || [];
-
-    const playersDiv = document.getElementById("players");
-    const outPlayersDiv = document.getElementById("outPlayers");
-    const currentNextUpSpan = document.getElementById("currentNextUp");
-    const confirmation = document.getElementById("confirmation");
-
-    document.getElementById("playerName").addEventListener("keyup", (e) => {
-      if (e.key === "Enter") addPlayer();
-    });
-
-    function addPlayer() {
-      const input = document.getElementById("playerName");
-      const color = document.getElementById("playerColor").value;
-      const name = input.value.trim();
-      if (!name) return;
-      const capitalized = name.charAt(0).toUpperCase() + name.slice(1);
-      const newPlayer = { id: Date.now(), name: capitalized, color: color, active: true };
-      players.push(newPlayer);
-      input.value = "";
-      input.focus();
-      showConfirmation(`${capitalized} added!`);
-      saveAndUpdate();
-    }
-
-    function showConfirmation(message) {
-      confirmation.textContent = message;
-      setTimeout(() => (confirmation.textContent = ""), 1500);
-    }
-
-    function updateDisplay() {
-      playersDiv.innerHTML = "";
-      players.forEach((player, index) => {
-        const playerDiv = document.createElement("div");
-        playerDiv.className = "player flex justify-between items-center px-4 py-2 rounded cursor-pointer";
-        playerDiv.style.backgroundColor = player.color || "#f3f4f6";
-        playerDiv.draggable = true;
-        playerDiv.dataset.index = index;
-        playerDiv.dataset.id = player.id;
-        playerDiv.innerHTML = `<span>${player.name}</span>`;
-
-        playerDiv.addEventListener("dragstart", handleDragStart);
-        playerDiv.addEventListener("dragover", handleDragOver);
-        playerDiv.addEventListener("drop", handleDrop);
-        playerDiv.addEventListener("dragenter", handleDragEnter);
-        playerDiv.addEventListener("dragleave", handleDragLeave);
-
-        playerDiv.addEventListener("touchstart", handleTouchStart, { passive: true });
-        playerDiv.addEventListener("touchmove", handleTouchMove, { passive: false });
-        playerDiv.addEventListener("touchend", handleTouchEnd);
-
-        playerDiv.onclick = () => moveToOut(player.id);
-        playersDiv.appendChild(playerDiv);
-      });
-      currentNextUpSpan.textContent = players.length > 0 ? players[0].name : "No one";
-
-      outPlayersDiv.innerHTML = "";
-      outPlayers.forEach((player) => {
-        const outDiv = document.createElement("div");
-        outDiv.className = "flex justify-between items-center px-4 py-2 rounded cursor-pointer";
-        outDiv.style.backgroundColor = player.color || "#e5e7eb";
-        outDiv.innerHTML = `<span>${player.name}</span>`;
-        outDiv.onclick = () => moveToMain(player.id);
-        outPlayersDiv.appendChild(outDiv);
-      });
-    }
-
-    let dragSrcIndex = null;
-    let touchStartY = 0;
-
-    function handleDragStart(e) {
-      dragSrcIndex = +this.dataset.index;
-      e.dataTransfer.effectAllowed = "move";
-    }
-
-    function handleDragOver(e) {
-      e.preventDefault();
-      return false;
-    }
-
-    function handleDrop(e) {
-      const destIndex = +this.dataset.index;
-      if (dragSrcIndex !== null && dragSrcIndex !== destIndex) {
-        const [moved] = players.splice(dragSrcIndex, 1);
-        players.splice(destIndex, 0, moved);
-        saveAndUpdate();
-      }
-    }
-
-    function handleDragEnter(e) {
-      this.classList.add("drag-over");
-    }
-
-    function handleDragLeave(e) {
-      this.classList.remove("drag-over");
-    }
-
-    function handleTouchStart(e) {
-      touchStartY = e.touches[0].clientY;
-      dragSrcIndex = +this.dataset.index;
-    }
-
-    function handleTouchMove(e) {
-      e.preventDefault();
-      const touch = e.touches[0];
-      const target = document.elementFromPoint(touch.clientX, touch.clientY);
-      if (target && target.classList.contains("player")) {
-        target.classList.add("drag-over");
-      }
-    }
-
-    function handleTouchEnd(e) {
-      const touch = e.changedTouches[0];
-      const target = document.elementFromPoint(touch.clientX, touch.clientY);
-      if (target && target.dataset.index !== undefined) {
-        const destIndex = +target.dataset.index;
-        if (dragSrcIndex !== null && dragSrcIndex !== destIndex) {
-          const [moved] = players.splice(dragSrcIndex, 1);
-          players.splice(destIndex, 0, moved);
-          saveAndUpdate();
-        }
-      }
-    }
-
-    function nextUp() {
-      if (players.length === 0) return alert("No players in the queue.");
-      players.push(players.shift());
-      saveAndUpdate();
-    }
-
-    function resetPlayers() {
-      players = [];
-      outPlayers = [];
-      saveAndUpdate();
-    }
-
-    function moveToOut(id) {
-      const index = players.findIndex((p) => p.id === id);
-      if (index !== -1) {
-        const [removed] = players.splice(index, 1);
-        outPlayers.push(removed);
-        saveAndUpdate();
-      }
-    }
-
-    function moveToMain(id) {
-      const index = outPlayers.findIndex((p) => p.id === id);
-      if (index !== -1) {
-        const [restored] = outPlayers.splice(index, 1);
-        players.push(restored);
-        saveAndUpdate();
-      }
-    }
-
-    function saveAndUpdate() {
-      localStorage.setItem("playersQueue", JSON.stringify(players));
-      localStorage.setItem("outQueue", JSON.stringify(outPlayers));
-      updateDisplay();
-    }
-
-    updateDisplay();
-  </script>
 </body>
 </html>
