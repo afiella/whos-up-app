@@ -9,6 +9,7 @@ const firebaseConfig = {
 };
 
 firebase.initializeApp(firebaseConfig);
+console.log("✅ Firebase initialized");
 const db = firebase.database();
 
 const nameList = [
@@ -26,6 +27,8 @@ let currentRoom = window.location.pathname.includes("bh") ? "BH" : "59";
 let currentUser = null;
 
 document.addEventListener("DOMContentLoaded", () => {
+  console.log("✅ DOM content loaded, running main.js");
+  
   const nameButtons = document.getElementById("nameButtons");
   const mainScreen = document.getElementById("mainScreen");
   const nameSelect = document.getElementById("nameSelect");
