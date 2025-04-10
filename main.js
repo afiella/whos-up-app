@@ -13,7 +13,7 @@ const db = firebase.database();
 
 const nameList = ["Archie", "Ella", "Veronica", "Dan", "Alex", "Adam", "Darryl", "Michael", "Tia", "Rob", "Jeremy", "Nassir", "Greg"];
 const colorList = [
-  "#2f4156", "#567c8d", "#c8d9e6", "#66066", "#8c5a7f", "#adb3bc",
+  "#2f4156", "#567c8d", "#c8d9e6", "#333333", "#8c5a7f", "#adb3bc",
   "#794044", "#d195b2", "#f9cb9c", "#420420", "#81d8d0", "#ede1bc", "#888888"
 ];
 
