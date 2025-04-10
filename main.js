@@ -13,8 +13,9 @@ const db = firebase.database();
 
 const nameList = ["Archie", "Ella", "Veronica", "Dan", "Alex", "Adam", "Darryl", "Michael", "Tia", "Rob", "Jeremy", "Nassir", "Greg"];
 const colorList = [
-  "#f87171", "#60a5fa", "#34d399", "#fbbf24", "#a78bfa",
-  "#f472b6", "#10b981", "#fb923c", "#4ade80", "#facc15", "#e879f9", "#38bdf8", "#fcd34d"
+  "#2f4156", "#567c8d", "#c8d9e6", "#f5efeb",
+  "#8c5a7f", "#adb3bc", "#4697df", "#d195b2",
+  "#f9cb9c", "#88afb7", "#bdcccf", "#ede1bc"
 ];
 
 let currentRoom = window.location.pathname.includes("bh") ? "BH" : "59";
