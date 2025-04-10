@@ -1,51 +1,100 @@
-<script type="module">
-  import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-app.js";
-  import { getDatabase, ref, onValue, update, remove } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-database.js";
-
-  const firebaseConfig = {
-    apiKey: "AIzaSyDkEKUzUhc-nKFLnF1w0MOm6qwpKHTpfaI",
-    authDomain: "who-s-up-app.firebaseapp.com",
-    databaseURL: "https://who-s-up-app-default-rtdb.firebaseio.com",
-    projectId: "who-s-up-app",
-    storageBucket: "who-s-up-app.appspot.com",
-    messagingSenderId: "167292375113",
-    appId: "1:167292375113:web:ce718a1aab4852fe5daf98"
-  };
-
-  const app = initializeApp(firebaseConfig);
-  const db = getDatabase(app);
-  let currentRoom = null;
-  let draggedIndex = null;
-  let playerKeys = [];
-
-  window.checkPassword = function () {
-    const input = document.getElementById("adminPassword").value.trim();
-    if (input === "afia") {
-      document.getElementById("loginSection").classList.add("hidden");
-      document.getElementById("adminPanel").classList.remove("hidden");
-    } else {
-      alert("Incorrect password");
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Who's Up Admin</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://www.gstatic.com/firebasejs/11.6.0/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/11.6.0/firebase-database.js"></script>
+  <style>
+    .drag-over {
+      outline: 2px dashed #3b82f6;
+      background-color: #e0f2fe;
     }
-  };
+  </style>
+</head>
+<body class="bg-gray-100 min-h-screen flex items-center justify-center">
+  <!-- Login Form -->
+  <div id="loginSection" class="text-center">
+    <h1 class="text-2xl font-bold mb-4">Admin Login</h1>
+    <input type="password" id="adminPassword" placeholder="Enter password"
+           class="p-2 border border-gray-300 rounded mb-4" />
+    <button onclick="checkPassword()" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">
+      Login
+    </button>
+  </div>
 
-  window.loadRoom = function (room) {
-    currentRoom = room;
-    document.getElementById("roomTitle").textContent = `Room: ${room}`;
-    const playersRef = ref(db, `rooms/${room}/players`);
-    onValue(playersRef, (snapshot) => {
-      const data = snapshot.val() || {};
+  <!-- Admin Panel -->
+  <div id="adminPanel" class="hidden w-full max-w-3xl p-6">
+    <h1 class="text-2xl font-bold mb-4 text-center">Who's Up Admin Panel</h1>
+
+    <div class="flex justify-center gap-4 mb-6">
+      <button onclick="loadRoom('BH')" class="bg-blue-500 text-white px-4 py-2 rounded">View BH</button>
+      <button onclick="loadRoom('59')" class="bg-purple-500 text-white px-4 py-2 rounded">View 59</button>
+    </div>
+
+    <h2 class="text-xl font-semibold mb-2 text-center" id="roomTitle">Select a room</h2>
+    <div id="playerList" class="space-y-2"></div>
+
+    <!-- Back Button -->
+    <div class="mt-6 text-center">
+      <a href="index.html" class="inline-block bg-gray-200 text-gray-700 px-4 py-2 rounded hover:bg-gray-300">
+        ← Back to Landing Page
+      </a>
+    </div>
+  </div>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-app.js";
+    import { getDatabase, ref, onValue, update, remove, set } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-database.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyDkEKUzUhc-nKFLnF1w0MOm6qwpKHTpfaI",
+      authDomain: "who-s-up-app.firebaseapp.com",
+      databaseURL: "https://who-s-up-app-default-rtdb.firebaseio.com",
+      projectId: "who-s-up-app",
+      storageBucket: "who-s-up-app.appspot.com",
+      messagingSenderId: "167292375113",
+      appId: "1:167292375113:web:ce718a1aab4852fe5daf98",
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getDatabase(app);
+
+    let currentRoom = "";
+    let currentPlayers = {};
+
+    window.checkPassword = function () {
+      const input = document.getElementById("adminPassword").value.trim();
+      if (input === "afia") {
+        document.getElementById("loginSection").classList.add("hidden");
+        document.getElementById("adminPanel").classList.remove("hidden");
+      } else {
+        alert("Incorrect password");
+      }
+    };
+
+    window.loadRoom = function (room) {
+      currentRoom = room;
+      document.getElementById("roomTitle").textContent = `Room: ${room}`;
+      const playersRef = ref(db, `rooms/${room}/players`);
+      onValue(playersRef, (snapshot) => {
+        currentPlayers = snapshot.val() || {};
+        renderPlayers();
+      });
+    };
+
+    function renderPlayers() {
       const playerList = document.getElementById("playerList");
       playerList.innerHTML = "";
 
-      playerKeys = Object.entries(data)
-        .filter(([_, p]) => p.inRotation !== false)
-        .sort((a, b) => a[1].joinedAt - b[1].joinedAt);
-
-      playerKeys.forEach(([key, player], index) => {
+      const sorted = Object.entries(currentPlayers).sort((a, b) => a[1].joinedAt - b[1].joinedAt);
+      sorted.forEach(([key, player], index) => {
         const div = document.createElement("div");
         div.className = "flex items-center justify-between bg-white p-3 rounded shadow cursor-move";
-        div.setAttribute("draggable", true);
-        div.dataset.index = index;
+        div.draggable = true;
+        div.dataset.name = key;
 
         div.innerHTML = `
           <div class="flex items-center gap-3">
@@ -53,56 +102,69 @@
             <span class="font-semibold">${player.name}</span>
           </div>
           <div class="flex gap-2">
-            <button onclick="removePlayer('${room}', '${key}')" class="bg-red-500 text-white px-2 py-1 rounded text-sm">Remove</button>
-            <button onclick="skipPlayer('${room}', '${key}')" class="bg-yellow-500 text-white px-2 py-1 rounded text-sm">Skip</button>
+            <button onclick="removePlayer('${currentRoom}', '${key}')" class="bg-red-500 text-white px-2 py-1 rounded text-sm">Remove</button>
+            <button onclick="skipPlayer('${currentRoom}', '${key}')" class="bg-yellow-500 text-white px-2 py-1 rounded text-sm">Skip</button>
           </div>
         `;
 
-        // Drag events
-        div.addEventListener("dragstart", (e) => {
-          draggedIndex = parseInt(div.dataset.index);
-        });
-
-        div.addEventListener("dragover", (e) => {
-          e.preventDefault();
-          div.classList.add("ring", "ring-blue-300");
-        });
-
-        div.addEventListener("dragleave", () => {
-          div.classList.remove("ring", "ring-blue-300");
-        });
-
-        div.addEventListener("drop", () => {
-          const targetIndex = parseInt(div.dataset.index);
-          reorderPlayers(draggedIndex, targetIndex);
-        });
+        div.addEventListener("dragstart", handleDragStart);
+        div.addEventListener("dragover", handleDragOver);
+        div.addEventListener("dragleave", handleDragLeave);
+        div.addEventListener("drop", handleDrop);
 
         playerList.appendChild(div);
       });
-    });
-  };
+    }
 
-  function reorderPlayers(fromIndex, toIndex) {
-    if (fromIndex === toIndex) return;
+    let draggedPlayer = null;
 
-    const moved = playerKeys.splice(fromIndex, 1)[0];
-    playerKeys.splice(toIndex, 0, moved);
+    function handleDragStart(e) {
+      draggedPlayer = e.currentTarget;
+    }
 
-    const updates = {};
-    playerKeys.forEach(([key], i) => {
-      updates[`rooms/${currentRoom}/players/${key}/joinedAt`] = Date.now() + i;
-    });
+    function handleDragOver(e) {
+      e.preventDefault();
+      e.currentTarget.classList.add("drag-over");
+    }
 
-    update(ref(db), updates);
-  }
+    function handleDragLeave(e) {
+      e.currentTarget.classList.remove("drag-over");
+    }
 
-  window.removePlayer = (room, key) => {
-    const playerRef = ref(db, `rooms/${room}/players/${key}`);
-    remove(playerRef);
-  };
+    function handleDrop(e) {
+      e.preventDefault();
+      e.currentTarget.classList.remove("drag-over");
 
-  window.skipPlayer = (room, key) => {
-    const playerRef = ref(db, `rooms/${room}/players/${key}`);
-    update(playerRef, { skip: true });
-  };
-</script>
+      const dropTarget = e.currentTarget;
+      if (!draggedPlayer || draggedPlayer === dropTarget) return;
+
+      const playerList = document.getElementById("playerList");
+      const children = [...playerList.children];
+      const draggedIndex = children.indexOf(draggedPlayer);
+      const targetIndex = children.indexOf(dropTarget);
+
+      if (draggedIndex > -1 && targetIndex > -1 && draggedIndex !== targetIndex) {
+        const entries = Object.entries(currentPlayers).sort((a, b) => a[1].joinedAt - b[1].joinedAt);
+        const reordered = [...entries];
+        const [moved] = reordered.splice(draggedIndex, 1);
+        reordered.splice(targetIndex, 0, moved);
+
+        reordered.forEach(([key, player], idx) => {
+          const playerRef = ref(db, `rooms/${currentRoom}/players/${key}`);
+          update(playerRef, { joinedAt: Date.now() + idx });
+        });
+      }
+    }
+
+    window.removePlayer = (room, key) => {
+      const playerRef = ref(db, `rooms/${room}/players/${key}`);
+      remove(playerRef);
+    };
+
+    window.skipPlayer = (room, key) => {
+      const playerRef = ref(db, `rooms/${room}/players/${key}`);
+      update(playerRef, { skip: true });
+    };
+  </script>
+</body>
+</html>
