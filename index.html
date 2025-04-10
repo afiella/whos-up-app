@@ -13,10 +13,12 @@
       opacity: 0;
       transition: opacity 0.5s ease;
     }
+
     .fade-in {
       opacity: 0;
       animation: fadeIn 0.6s ease forwards;
     }
+
     @keyframes fadeIn {
       to { opacity: 1; }
     }
@@ -24,8 +26,8 @@
 </head>
 <body class="bg-gray-100 min-h-screen flex items-center justify-center px-4">
 
-  <!-- Loading Animation -->
-  <div id="loadingScreen" class="fixed inset-0 bg-white flex items-center justify-center z-50">
+  <!-- Lottie Loading Screen (Initially Hidden) -->
+  <div id="loadingScreen" class="hidden fixed inset-0 bg-white flex flex-col items-center justify-center z-50">
     <dotlottie-player
       src="https://lottie.host/926f3f69-99ed-4086-a29a-f364e02fba97/fwd3Sw5Enn.lottie"
       background="transparent"
@@ -36,11 +38,13 @@
       loop
       autoplay
     ></dotlottie-player>
+    <p class="text-gray-700 text-sm mt-4">Loading room...</p>
   </div>
 
-  <!-- Page Content with Fade -->
+  <!-- Main Landing Page -->
   <div id="mainPage" class="fade-in bg-[#f6f4ef] p-6 rounded shadow-2xl text-center space-y-6 w-full max-w-md">
     <img src="header.jpeg" alt="Who's Up Logo" class="w-64 mx-auto mb-6" />
+
     <div class="space-y-5">
       <a href="bh.html" class="transition-link block bg-blue-500 text-white py-2 rounded hover:bg-blue-600 transition">Join BH Room</a>
       <a href="59.html" class="transition-link block bg-purple-500 text-white py-2 rounded hover:bg-purple-600 transition">Join 59 Room</a>
@@ -48,24 +52,24 @@
     </div>
   </div>
 
-  <!-- Loader and Page Fade Logic -->
+  <!-- JavaScript for Transition -->
   <script>
-    window.addEventListener("load", () => {
-      const loader = document.getElementById("loadingScreen");
-      loader.classList.add("fade-out");
-      setTimeout(() => loader.style.display = "none", 500);
-    });
-
-    // Page fade-out transition on click
     document.querySelectorAll(".transition-link").forEach(link => {
       link.addEventListener("click", function (e) {
         e.preventDefault();
         const targetUrl = this.getAttribute("href");
-        const page = document.getElementById("mainPage");
-        page.classList.add("fade-out");
+
+        // Show loading screen
+        const loader = document.getElementById("loadingScreen");
+        loader.classList.remove("hidden");
+
+        // Fade out main content
+        document.getElementById("mainPage").classList.add("fade-out");
+
+        // Redirect after 3 seconds
         setTimeout(() => {
           window.location.href = targetUrl;
-        }, 400);
+        }, 3000);
       });
     });
   </script>
