@@ -1,5 +1,12 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-app.js";
-import { getDatabase, ref, onValue, update, remove, set } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-database.js";
+import {
+  getDatabase,
+  ref,
+  onValue,
+  update,
+  remove,
+  set
+} from "https://www.gstatic.com/firebasejs/11.6.0/firebase-database.js";
 
 const firebaseConfig = {
   apiKey: "AIzaSyDkEKUzUhc-nKFLnF1w0MOm6qwpKHTpfaI",
@@ -13,8 +20,8 @@ const firebaseConfig = {
 
 const app = initializeApp(firebaseConfig);
 const db = getDatabase(app);
+
 let currentRoom = null;
-let currentPlayers = {};
 
 window.checkPassword = function () {
   const input = document.getElementById("adminPassword").value.trim();
@@ -29,50 +36,52 @@ window.checkPassword = function () {
 window.loadRoom = function (room) {
   currentRoom = room;
   document.getElementById("roomTitle").textContent = `Room: ${room}`;
+  document.getElementById("reorderBtn").classList.remove("hidden");
+
   const playersRef = ref(db, `rooms/${room}/players`);
   onValue(playersRef, (snapshot) => {
     const data = snapshot.val() || {};
-    currentPlayers = data;
-    renderPlayers(data);
+    const playerList = document.getElementById("playerList");
+    playerList.innerHTML = "";
+
+    Object.entries(data).forEach(([key, player]) => {
+      let status = "Active";
+      let badgeColor = "bg-green-500";
+      if (!player.active) {
+        status = "Out of Rotation";
+        badgeColor = "bg-red-500";
+      } else if (player.skip) {
+        status = "With Customer";
+        badgeColor = "bg-yellow-500";
+      }
+
+      const div = document.createElement("div");
+      div.className = "flex items-center justify-between bg-white p-3 rounded shadow";
+
+      div.innerHTML = `
+        <div class="flex items-center gap-3">
+          <div class="w-8 h-8 rounded-full" style="background:${player.color}"></div>
+          <span class="font-semibold">${player.name}</span>
+          <span class="text-xs text-white px-2 py-1 rounded ${badgeColor}">${status}</span>
+        </div>
+        <div class="flex gap-2">
+          <button onclick="removePlayer('${room}', '${key}')" class="bg-red-500 text-white px-2 py-1 rounded text-sm">Remove</button>
+          <button onclick="skipPlayer('${room}', '${key}')" class="bg-yellow-500 text-white px-2 py-1 rounded text-sm">With Customer</button>
+          <button onclick="setActive('${room}', '${key}')" class="bg-green-500 text-white px-2 py-1 rounded text-sm">Back In</button>
+          <button onclick="setInactive('${room}', '${key}')" class="bg-gray-500 text-white px-2 py-1 rounded text-sm">Out of Rotation</button>
+        </div>
+      `;
+      playerList.appendChild(div);
+    });
   });
 };
 
-function renderPlayers(data) {
-  const playerList = document.getElementById("playerList");
-  playerList.innerHTML = "";
-
-  Object.entries(data).forEach(([key, player]) => {
-    const div = document.createElement("div");
-    div.className = "flex items-center justify-between bg-white p-3 rounded shadow";
-
-    div.innerHTML = `
-      <div class="flex items-center gap-3">
-        <div class="w-8 h-8 rounded-full" style="background:${player.color}"></div>
-        <span class="font-semibold">${player.name}</span>
-      </div>
-      <div class="flex gap-2">
-        <button onclick="removePlayer('${currentRoom}', '${key}')" class="bg-red-500 text-white px-2 py-1 rounded text-sm">Remove</button>
-        <button onclick="setWithCustomer('${currentRoom}', '${key}')" class="bg-yellow-500 text-white px-2 py-1 rounded text-sm">With Customer</button>
-        <button onclick="skipPlayer('${currentRoom}', '${key}')" class="bg-orange-500 text-white px-2 py-1 rounded text-sm">Skip Turn</button>
-      </div>
-    `;
-    playerList.appendChild(div);
-  });
-
-  document.getElementById("reorderBtn").classList.remove("hidden");
-}
-
-window.removePlayer = (room, key) => {
+window.removePlayer = function (room, key) {
   const playerRef = ref(db, `rooms/${room}/players/${key}`);
   remove(playerRef);
 };
 
-window.skipPlayer = (room, key) => {
-  const playerRef = ref(db, `rooms/${room}/players/${key}`);
-  update(playerRef, { skip: true });
-};
-
-window.setWithCustomer = (room, key) => {
+window.skipPlayer = function (room, key) {
   const playerRef = ref(db, `rooms/${room}/players/${key}`);
   update(playerRef, {
     active: true,
@@ -81,31 +90,47 @@ window.setWithCustomer = (room, key) => {
   });
 };
 
-window.reorderQueue = () => {
-  if (!currentRoom || !currentPlayers) return;
-
-  const currentOrder = Object.keys(currentPlayers).join(", ");
-  const promptText = `Enter the new order of names separated by commas:\n(current: ${currentOrder})`;
-  const input = prompt(promptText);
-
-  if (!input) return;
-
-  const nameOrder = input.split(",").map(n => n.trim()).filter(n => n);
-  const now = Date.now();
-
-  nameOrder.forEach((name, i) => {
-    const player = currentPlayers[name];
-    if (player) {
-      const newJoinedAt = now + i;
-      const playerRef = ref(db, `rooms/${currentRoom}/players/${name}`);
-      update(playerRef, { joinedAt: newJoinedAt });
-    }
+window.setActive = function (room, key) {
+  const playerRef = ref(db, `rooms/${room}/players/${key}`);
+  update(playerRef, {
+    active: true,
+    skip: false,
+    joinedAt: Date.now()
   });
+};
 
-  const msg = document.createElement("div");
-  msg.textContent = "Queue updated!";
-  msg.className = "text-green-600 font-semibold text-center mt-4";
-  document.getElementById("playerList").appendChild(msg);
+window.setInactive = function (room, key) {
+  const playerRef = ref(db, `rooms/${room}/players/${key}`);
+  update(playerRef, {
+    active: false,
+    skip: false
+  });
+};
 
-  setTimeout(() => msg.remove(), 2000);
+window.reorderQueue = function () {
+  if (!currentRoom) return;
+  const newOrderInput = prompt("Enter names in the desired order, separated by commas:");
+  if (!newOrderInput) return;
+
+  const names = newOrderInput.split(",").map(name => name.trim()).filter(Boolean);
+  const playersRef = ref(db, `rooms/${currentRoom}/players`);
+
+  onValue(playersRef, (snapshot) => {
+    const data = snapshot.val() || {};
+    const updates = {};
+    let timestamp = Date.now();
+
+    names.forEach((name, index) => {
+      const player = data[name];
+      if (player) {
+        updates[name] = {
+          ...player,
+          joinedAt: timestamp + index
+        };
+      }
+    });
+
+    set(playersRef, { ...data, ...updates });
+    alert("Queue updated!");
+  }, { onlyOnce: true });
 };
