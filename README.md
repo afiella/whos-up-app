@@ -1,14 +1,13 @@
- Rotation Queue App 🎮
+Sales Rotation Queue App 
 
-A responsive and animated web application for managing “who’s up next” in any rotation-based group. whether it’s for sales reps, game players, or collaborative tasks. This project was inspired by a real workflow challenge I encountered while working in sales and tech support.
+A responsive and animated web application for managing “who’s up next”. This project was inspired by a real workflow challenge I encountered while working in sales and tech support.
 
  ✨ Features
 
-- Smooth queue animations (fade and slide-up)
-- Add or remove players dynamically
-- “Out of Rotation” section for inactive participants
-- Click players to toggle their status
-- Queue persists using localStorage
+- Smooth queue animations
+- Add or remove players through admin controls
+- “Out of Rotation” section for inactive players
+- Queue persists using Firebase
 - Built with HTML, JavaScript, and Tailwind CSS
 
  📦 Tech Stack
@@ -16,17 +15,11 @@ A responsive and animated web application for managing “who’s up next” in 
 - HTML5
 - JavaScript
 - Tailwind CSS
-- LocalStorage API
+- Firebase
 
  🔗 Live Demo
 
 https://whos-up-p2u9bmv8i-afiellas-projects.vercel.app/
 
- 💡 Use Case
-
-Perfect for managing:
-- Sales rep rotations
-- Game night turn orders
-- Classroom activities or team exercises
 
 
