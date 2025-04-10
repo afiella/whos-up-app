@@ -5,141 +5,127 @@ const firebaseConfig = {
   projectId: "who-s-up-app",
   storageBucket: "who-s-up-app.appspot.com",
   messagingSenderId: "167292375113",
-  appId: "1:167292375113:web:ce718a1aab4852fe5daf98"
+  appId: "1:167292375113:web:ce718a1aab4852fe5daf98",
 };
 
 firebase.initializeApp(firebaseConfig);
 const db = firebase.database();
 
+const room = window.location.pathname.includes("bh") ? "BH" : "59";
+const allRooms = ["BH", "59"];
 const nameList = ["Archie", "Ella", "Veronica", "Dan", "Alex", "Adam", "Darryl", "Michael", "Tia", "Rob", "Jeremy", "Nassir", "Greg"];
-const colorList = [
-  "#2f4156", "#567c8d", "#c8d9e6", "#f5efeb", "#8c5a7f",
-  "#adb3bc", "#4697df", "#d195b2", "#f9cb9c", "#88afb7",
-  "#bdcccf", "#ede1bc"
-];
+const colors = ["#2f4156", "#567c8d", "#c8d9e6", "#f5efeb", "#8c5a7f", "#adb3bc", "#4697df", "#d195b2", "#f9cb9c", "#88afb7", "#bdcccf", "#ede1bc"];
 
-let currentRoom = window.location.pathname.includes("bh") ? "BH" : "59";
+let takenNames = new Set();
 let currentUser = null;
 
-const nameButtonsContainer = document.getElementById("nameButtons");
-const nameSelectSection = document.getElementById("nameSelect");
+const nameContainer = document.getElementById("nameButtons");
+const nameSection = document.getElementById("nameSelect");
 const mainScreen = document.getElementById("mainScreen");
-const queueDisplay = document.getElementById("queue");
 const joinedMessage = document.getElementById("joinedMessage");
+const queueDiv = document.getElementById("queue");
 const nextUpDiv = document.getElementById("nextUp");
 
-function renderNameButtons(disabledNames = []) {
-  nameButtonsContainer.innerHTML = "";
+function renderNames() {
+  nameContainer.innerHTML = "";
   nameList.forEach((name, i) => {
+    if (takenNames.has(name)) return;
+
     const btn = document.createElement("button");
     btn.textContent = name;
-    btn.className = "px-4 py-2 rounded-full shadow text-white font-semibold transition-all transform duration-300";
-    btn.style.backgroundColor = colorList[i % colorList.length];
-    btn.style.display = disabledNames.includes(name) ? "none" : "inline-block";
-    btn.onclick = () => selectName(name, colorList[i % colorList.length]);
-    nameButtonsContainer.appendChild(btn);
+    btn.className = "px-3 py-2 rounded-full text-white font-semibold";
+    btn.style.backgroundColor = colors[i % colors.length];
+    btn.onclick = () => joinPlayer(name, colors[i % colors.length]);
+    nameContainer.appendChild(btn);
   });
 }
 
-function selectName(name, color) {
-  const joinedAt = Date.now();
-  currentUser = { name, color, active: true, skip: false, joinedAt };
-  db.ref(`rooms/${currentRoom}/players/${name}`).set(currentUser);
-  localStorage.setItem("currentUser", JSON.stringify(currentUser));
-  nameSelectSection.classList.add("hidden");
+function showTakenModal() {
+  document.getElementById("takenModal").classList.remove("hidden");
+}
+
+function hideTakenModal() {
+  document.getElementById("takenModal").classList.add("hidden");
+}
+
+function joinPlayer(name, color) {
+  if (takenNames.has(name)) return showTakenModal();
+
+  const now = Date.now();
+  const userData = {
+    name,
+    color,
+    active: true,
+    skip: false,
+    joinedAt: now
+  };
+
+  currentUser = userData;
+  localStorage.setItem("currentUser", JSON.stringify(userData));
+
+  db.ref(`rooms/${room}/players/${name}`).set(userData);
+  nameSection.classList.add("hidden");
   mainScreen.classList.remove("hidden");
   joinedMessage.textContent = `Welcome, ${name}!`;
 
-  db.ref(`rooms/${currentRoom}/players`).on("value", snapshot => {
-    const data = snapshot.val() || {};
-    updateDisplay(data);
-  });
+  listenForQueueUpdates();
+}
 
-  db.ref("rooms").on("value", snapshot => {
-    const allRooms = snapshot.val() || {};
-    const allPlayers = Object.values(allRooms).flatMap(r => Object.keys(r.players || {}));
-    renderNameButtons(allPlayers);
+function listenForQueueUpdates() {
+  db.ref(`rooms/${room}/players`).on("value", (snapshot) => {
+    const players = snapshot.val() || {};
+    updateQueueDisplay(players);
   });
 }
 
-function updateDisplay(playersMap) {
-  const allPlayers = Object.values(playersMap || {});
-  const activePlayers = allPlayers
-    .filter(p => p.active && !p.skip)
-    .sort((a, b) => a.joinedAt - b.joinedAt);
+function updateQueueDisplay(players) {
+  const activePlayers = Object.values(players).filter(p => p.active && !p.skip);
+  activePlayers.sort((a, b) => a.joinedAt - b.joinedAt);
 
-  queueDisplay.innerHTML = "";
-
-  allPlayers
-    .sort((a, b) => a.joinedAt - b.joinedAt)
-    .forEach((p) => {
-      let status = "Active";
-      let badgeColor = "bg-green-500";
-
-      if (!p.active) {
-        status = "Out";
-        badgeColor = "bg-red-500";
-      } else if (p.skip) {
-        status = "With Customer";
-        badgeColor = "bg-yellow-500";
-      }
-
-      const div = document.createElement("div");
-      div.className = "player player-enter bg-white p-3 rounded shadow my-2";
-      div.innerHTML = `
-        <div class="flex items-center justify-between">
-          <div class="flex items-center gap-2">
-            <span class="inline-block w-4 h-4 rounded-full" style="background-color: ${p.color}"></span>
-            <span>${p.name}</span>
-          </div>
-          <span class="text-xs text-white px-2 py-1 rounded ${badgeColor}">${status}</span>
-        </div>
-      `;
-      queueDisplay.appendChild(div);
-
-      requestAnimationFrame(() => {
-        div.classList.remove("player-enter");
-        div.classList.add("player-enter-active");
-      });
+  queueDiv.innerHTML = "";
+  activePlayers.forEach((p) => {
+    const div = document.createElement("div");
+    div.className = "player player-enter bg-white p-3 rounded shadow";
+    div.style.backgroundColor = p.color;
+    div.innerHTML = `<strong class="text-white">${p.name}</strong>`;
+    queueDiv.appendChild(div);
+    requestAnimationFrame(() => {
+      div.classList.remove("player-enter");
+      div.classList.add("player-enter-active");
     });
+  });
 
   const next = activePlayers[0];
   nextUpDiv.innerHTML = next
-    ? `
-      <div class="flex items-center justify-center gap-2">
-        <span class="inline-block w-4 h-4 rounded-full" style="background-color: ${next.color}"></span>
-        <span class="font-semibold">${next.name}</span>
-      </div>
-    `
-    : "No one";
+    ? `<span class="font-semibold text-blue-600">${next.name}</span>`
+    : `<span class="text-gray-400">No one</span>`;
 }
 
 function setStatus(action) {
   if (!currentUser) return;
-  const userRef = db.ref(`rooms/${currentRoom}/players/${currentUser.name}`);
-
-  if (action === "active" || action === "skip") {
-    const updates = {
-      active: true,
-      skip: action === "skip",
-      joinedAt: Date.now()
-    };
-    userRef.update(updates);
-    currentUser = { ...currentUser, ...updates };
-  }
-
-  if (action === "inactive") {
-    const updates = { active: false, skip: false };
-    userRef.update(updates);
-    currentUser = { ...currentUser, ...updates };
-  }
+  const ref = db.ref(`rooms/${room}/players/${currentUser.name}`);
+  const updateData = { active: action === "active", skip: action === "skip", joinedAt: Date.now() };
+  if (action === "inactive") updateData.active = false;
+  ref.update(updateData);
+  Object.assign(currentUser, updateData);
 }
 
 function leaveGame() {
-  if (!currentUser) return;
-  db.ref(`rooms/${currentRoom}/players/${currentUser.name}`).remove();
+  db.ref(`rooms/${room}/players/${currentUser.name}`).remove();
   localStorage.removeItem("currentUser");
   window.location.href = "index.html";
 }
 
-renderNameButtons();
+function checkTakenNames() {
+  allRooms.forEach(r => {
+    db.ref(`rooms/${r}/players`).on("value", snapshot => {
+      const data = snapshot.val() || {};
+      takenNames = new Set(Object.keys(data));
+      renderNames();
+    });
+  });
+}
+
+document.getElementById("closeModal").addEventListener("click", hideTakenModal);
+
+checkTakenNames();
