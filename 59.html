@@ -2,60 +2,56 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>59 Room</title>
-  <link rel="icon" type="image/png" href="IMG_0038.png" />
   <script src="https://cdn.tailwindcss.com"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
-  <script defer src="main.js"></script>
-  <script defer src="https://vercel.live/_analytics/script.js"></script>
-  
+  <script src="https://www.gstatic.com/firebasejs/11.6.0/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/11.6.0/firebase-database.js"></script>
   <style>
-  .player {
-    transition: transform 0.4s ease, opacity 0.3s ease;
-    will-change: transform, opacity;
-  }
+    #nameButtons button {
+      animation: popIn 0.4s ease-in-out;
+    }
 
-  .player-enter {
-    transform: translateY(20px);
-    opacity: 0;
-  }
-
-  .player-enter-active {
-    transform: translateY(0);
-    opacity: 1;
-  }
-</style>
-  
+    @keyframes popIn {
+      from {
+        opacity: 0;
+        transform: scale(0.9);
+      }
+      to {
+        opacity: 1;
+        transform: scale(1);
+      }
+    }
+  </style>
 </head>
-<body class="bg-gray-100 flex items-center justify-center min-h-screen">
-  <div class="bg-white p-6 rounded shadow-md w-full max-w-md">
-    <h1 class="text-xl font-bold mb-4 text-center">59 Room</h1>
+<body class="bg-gray-100 min-h-screen p-4">
+  <!-- Name Selection Section -->
+  <div id="nameSelect" class="max-w-md mx-auto bg-white shadow-lg p-6 rounded-lg">
+    <h1 class="text-2xl font-bold text-center mb-4">Join 59 Room</h1>
+    <p class="text-center mb-2">Select your name:</p>
+    <div id="nameButtons" class="grid grid-cols-3 gap-4 justify-center"></div>
+  </div>
 
-    <div id="nameSelect">
-      <p class="mb-2 text-center">Select your name to join:</p>
-      <div id="nameButtons" class="flex flex-wrap gap-2 justify-center"></div>
+  <!-- Main Screen After Joining -->
+  <div id="mainScreen" class="hidden max-w-md mx-auto bg-white shadow-lg p-6 rounded-lg mt-6">
+    <h2 class="text-xl font-semibold mb-2 text-center">Welcome to 59 Room</h2>
+    <p id="joinedMessage" class="text-green-600 font-medium text-center mb-4"></p>
+
+    <div id="nextUp" class="text-center mb-4 text-lg font-semibold text-blue-700"></div>
+
+    <div id="queue" class="space-y-2 mb-6"></div>
+
+    <div class="flex justify-center gap-4 mb-4">
+      <button onclick="setStatus('skip')" class="bg-yellow-400 text-white px-4 py-2 rounded">With Customer</button>
+      <button onclick="setStatus('active')" class="bg-green-500 text-white px-4 py-2 rounded">Back In</button>
+      <button onclick="setStatus('inactive')" class="bg-red-500 text-white px-4 py-2 rounded">Out of Rotation</button>
     </div>
 
-    <div id="mainScreen" class="hidden">
-      <p class="font-semibold text-green-600 text-center mb-4" id="joinedMessage"></p>
-      
-      <div class="border p-2 rounded mb-6 text-center">
-        <div class="font-semibold">Next:</div>
-        <div id="nextUp">No one</div>
-      </div>
-
-      <div id="queue" class="space-y-1 mb-6"></div>
-
-      <div class="flex flex-col gap-3">
-        <button onclick="setStatus('skip')" class="bg-yellow-500 text-white px-4 py-2 rounded hover:bg-yellow-600">With a Customer</button>
-        <button onclick="setStatus('active')" class="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600">Back In</button>
-        <button onclick="setStatus('inactive')" class="bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600">Out of Rotation</button>
-        <button onclick="leaveGame()" class="bg-gray-500 text-white px-4 py-2 rounded hover:bg-gray-600 mt-2">Leave Game</button>
-        <a href="index.html" class="mt-2 text-blue-600 underline text-sm text-center">Switch Room</a>
-      </div>
+    <div class="text-center">
+      <button onclick="leaveGame()" class="text-sm text-gray-500 underline">Leave Game</button>
     </div>
   </div>
+
+  <script type="module" src="main.js"></script>
 </body>
 </html>
