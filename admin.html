@@ -6,40 +6,84 @@
   <title>Who's Up Admin</title>
   <script src="https://cdn.tailwindcss.com"></script>
 </head>
-<body class="bg-gray-100 min-h-screen flex flex-col items-center justify-center p-4">
-
-  <!-- Admin Login Section -->
-  <div id="loginSection" class="text-center w-full max-w-md">
+<body class="bg-gray-100 min-h-screen flex items-center justify-center">
+  <!-- Login Section -->
+  <div id="loginSection" class="text-center">
     <h1 class="text-2xl font-bold mb-4">Admin Login</h1>
     <input type="password" id="adminPassword" placeholder="Enter password"
-           class="w-full p-2 border border-gray-300 rounded mb-4" />
-    <button onclick="checkPassword()" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 w-full">
+           class="p-2 border border-gray-300 rounded mb-4" />
+    <button onclick="checkPassword()" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">
       Login
     </button>
   </div>
 
   <!-- Admin Panel -->
-  <div id="adminPanel" class="hidden w-full max-w-3xl">
-    <h1 class="text-2xl font-bold mb-6 text-center">Who's Up Admin Panel</h1>
+  <div id="adminPanel" class="hidden w-full max-w-4xl p-6">
+    <h1 class="text-2xl font-bold mb-4 text-center">Who's Up Admin Panel</h1>
 
     <div class="flex justify-center gap-4 mb-6">
       <button onclick="loadRoom('BH')" class="bg-blue-500 text-white px-4 py-2 rounded">View BH</button>
       <button onclick="loadRoom('59')" class="bg-purple-500 text-white px-4 py-2 rounded">View 59</button>
     </div>
 
-    <h2 class="text-xl font-semibold mb-2 text-center" id="roomTitle">Select a room</h2>
+    <h2 class="text-xl font-semibold mb-4 text-center" id="roomTitle">Select a room</h2>
+    <div id="playerList" class="space-y-2 mb-4"></div>
 
-    <!-- Up Next -->
-    <div id="currentUp" class="text-center text-lg font-semibold mb-4 text-green-600">
-      No one is currently up.
+    <!-- Reorder Button -->
+    <div class="text-center mt-6">
+      <button id="reorderBtn" onclick="promptReorder()" class="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700">
+        Reorder Queue
+      </button>
     </div>
 
-    <!-- Player List -->
-    <div id="playerList" class="space-y-3 mb-6"></div>
+    <!-- Manual Add Player -->
+    <div class="mt-10 p-4 bg-white shadow rounded">
+      <h3 class="text-lg font-semibold mb-4 text-center">Manually Add Player</h3>
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div>
+          <label for="manualName" class="block mb-1">Select Name:</label>
+          <select id="manualName" class="w-full p-2 border border-gray-300 rounded"></select>
+        </div>
+        <div>
+          <label for="manualColor" class="block mb-1">Select Color:</label>
+          <select id="manualColor" class="w-full p-2 border border-gray-300 rounded">
+            <option value="#2f4156">#2f4156</option>
+            <option value="#567c8d">#567c8d</option>
+            <option value="#c8d9e6">#c8d9e6</option>
+            <option value="#f5efeb">#f5efeb</option>
+            <option value="#8c5a7f">#8c5a7f</option>
+            <option value="#adb3bc">#adb3bc</option>
+            <option value="#4697df">#4697df</option>
+            <option value="#d195b2">#d195b2</option>
+            <option value="#f9cb9c">#f9cb9c</option>
+            <option value="#88afb7">#88afb7</option>
+            <option value="#bdcccf">#bdcccf</option>
+            <option value="#ede1bc">#ede1bc</option>
+          </select>
+        </div>
+        <div>
+          <label for="manualStatus" class="block mb-1">Status:</label>
+          <select id="manualStatus" class="w-full p-2 border border-gray-300 rounded">
+            <option value="active">Active</option>
+            <option value="withCustomer">With Customer</option>
+            <option value="out">Out of Rotation</option>
+          </select>
+        </div>
+        <div>
+          <label for="manualPosition" class="block mb-1">Insert At Position (0 = top):</label>
+          <input type="number" id="manualPosition" class="w-full p-2 border border-gray-300 rounded" min="0" />
+        </div>
+      </div>
+      <div class="text-center mt-4">
+        <button onclick="addPlayerManually()" class="bg-indigo-600 text-white px-4 py-2 rounded hover:bg-indigo-700">
+          Add Player
+        </button>
+      </div>
+    </div>
 
     <!-- Back Button -->
     <div class="mt-6 text-center">
-      <a href="index.html" class="inline-block bg-gray-300 text-gray-800 px-4 py-2 rounded hover:bg-gray-400">
+      <a href="index.html" class="inline-block bg-gray-200 text-gray-700 px-4 py-2 rounded hover:bg-gray-300">
         ← Back to Landing Page
       </a>
     </div>
