@@ -46,26 +46,22 @@
     const app = initializeApp(firebaseConfig);
     const db = getDatabase(app);
 
-    const loginSection = document.getElementById("loginSection");
-    const adminPanel = document.getElementById("adminPanel");
-    const playerList = document.getElementById("playerList");
-    const roomTitle = document.getElementById("roomTitle");
-
-    function checkPassword() {
+    window.checkPassword = function () {
       const input = document.getElementById("adminPassword").value.trim();
       if (input === "afia") {
-        loginSection.classList.add("hidden");
-        adminPanel.classList.remove("hidden");
+        document.getElementById("loginSection").classList.add("hidden");
+        document.getElementById("adminPanel").classList.remove("hidden");
       } else {
         alert("Incorrect password");
       }
-    }
+    };
 
-    function loadRoom(room) {
-      roomTitle.textContent = `Room: ${room}`;
+    window.loadRoom = function (room) {
+      document.getElementById("roomTitle").textContent = `Room: ${room}`;
       const playersRef = ref(db, `rooms/${room}/players`);
       onValue(playersRef, (snapshot) => {
         const data = snapshot.val() || {};
+        const playerList = document.getElementById("playerList");
         playerList.innerHTML = "";
 
         Object.entries(data).forEach(([key, player]) => {
@@ -85,7 +81,7 @@
           playerList.appendChild(div);
         });
       });
-    }
+    };
 
     window.removePlayer = (room, key) => {
       const playerRef = ref(db, `rooms/${room}/players/${key}`);
