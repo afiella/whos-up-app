@@ -13,9 +13,8 @@ const db = firebase.database();
 
 const nameList = ["Archie", "Ella", "Veronica", "Dan", "Alex", "Adam", "Darryl", "Michael", "Tia", "Rob", "Jeremy", "Nassir", "Greg"];
 const colorList = [
-  "#2f4156", "#567c8d", "#c8d9e6", "#084d5c", "#8679a9",
-  "#8c5a7f", "#adb3bc", "#4697df", "#d195b2",
-  "#f9cb9c", "#88afb7", "#bdcccf", "#ede1bc"
+  "#2f4156", "#567c8d", "#c8d9e6", "#f5efeb", "#8c5a7f", "#adb3bc",
+  "#4697df", "#d195b2", "#f9cb9c", "#88afb7", "#bdcccf", "#ede1bc", "#888888"
 ];
 
 let currentRoom = window.location.pathname.includes("bh") ? "BH" : "59";
@@ -30,13 +29,28 @@ const nextUpDiv = document.getElementById("nextUp");
 
 function renderNameButtons() {
   nameButtonsContainer.innerHTML = "";
-  nameList.forEach((name, i) => {
-    const btn = document.createElement("button");
-    btn.textContent = name;
-    btn.className = "px-3 py-1 rounded text-white font-medium";
-    btn.style.backgroundColor = colorList[i % colorList.length];
-    btn.onclick = () => selectName(name, colorList[i % colorList.length]);
-    nameButtonsContainer.appendChild(btn);
+
+  db.ref(`rooms/${currentRoom}/players`).once("value").then(snapshot => {
+    const existingPlayers = snapshot.val() || {};
+    const takenNames = Object.keys(existingPlayers);
+
+    nameList.forEach((name, i) => {
+      const btn = document.createElement("button");
+      const isTaken = takenNames.includes(name);
+
+      btn.textContent = name;
+      btn.className = `px-3 py-1 rounded-full w-24 h-24 text-white font-medium text-sm shadow ${
+        isTaken ? "opacity-50 cursor-not-allowed bg-gray-400" : ""
+      }`;
+      btn.style.backgroundColor = isTaken ? "#d1d5db" : colorList[i % colorList.length];
+      btn.disabled = isTaken;
+
+      if (!isTaken) {
+        btn.onclick = () => selectName(name, colorList[i % colorList.length]);
+      }
+
+      nameButtonsContainer.appendChild(btn);
+    });
   });
 }
 
@@ -78,23 +92,16 @@ function updateDisplay(playersMap) {
       }
 
       const div = document.createElement("div");
-      div.className = "player player-enter mb-2";
       div.innerHTML = `
-        <div class="flex items-center justify-between">
+        <div class="flex items-center justify-between p-2 bg-white rounded shadow">
           <div class="flex items-center gap-2">
             <span class="inline-block w-4 h-4 rounded-full" style="background-color: ${p.color}"></span>
-            <span>${p.name}</span>
+            <span class="font-medium">${p.name}</span>
           </div>
           <span class="text-xs text-white px-2 py-1 rounded ${badgeColor}">${status}</span>
         </div>
       `;
       queueDisplay.appendChild(div);
-
-      // Animate slide-in
-      requestAnimationFrame(() => {
-        div.classList.remove("player-enter");
-        div.classList.add("player-enter-active");
-      });
     });
 
   const next = activePlayers[0];
@@ -117,7 +124,7 @@ function setStatus(action) {
     const updates = {
       active: true,
       skip: action === "skip",
-      joinedAt: Date.now() // Push to end of line
+      joinedAt: Date.now()
     };
     userRef.update(updates);
     currentUser = { ...currentUser, ...updates };
@@ -135,7 +142,6 @@ function setStatus(action) {
 
 function leaveGame() {
   if (!currentUser) return;
-
   db.ref(`rooms/${currentRoom}/players/${currentUser.name}`).remove();
   localStorage.removeItem("currentUser");
   window.location.href = "index.html";
