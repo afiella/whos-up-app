@@ -9,6 +9,7 @@
   <script src="https://www.gstatic.com/firebasejs/11.6.0/firebase-database.js"></script>
 </head>
 <body class="bg-gray-100 min-h-screen flex items-center justify-center">
+  <!-- Login Form -->
   <div id="loginSection" class="text-center">
     <h1 class="text-2xl font-bold mb-4">Admin Login</h1>
     <input type="password" id="adminPassword" placeholder="Enter password"
@@ -18,14 +19,24 @@
     </button>
   </div>
 
+  <!-- Admin Panel -->
   <div id="adminPanel" class="hidden w-full max-w-3xl p-6">
     <h1 class="text-2xl font-bold mb-4 text-center">Who's Up Admin Panel</h1>
+
     <div class="flex justify-center gap-4 mb-6">
       <button onclick="loadRoom('BH')" class="bg-blue-500 text-white px-4 py-2 rounded">View BH</button>
       <button onclick="loadRoom('59')" class="bg-purple-500 text-white px-4 py-2 rounded">View 59</button>
     </div>
+
     <h2 class="text-xl font-semibold mb-2 text-center" id="roomTitle">Select a room</h2>
     <div id="playerList" class="space-y-2"></div>
+
+    <!-- Back Button -->
+    <div class="mt-6 text-center">
+      <a href="index.html" class="inline-block bg-gray-200 text-gray-700 px-4 py-2 rounded hover:bg-gray-300">
+        ← Back to Landing Page
+      </a>
+    </div>
   </div>
 
   <script type="module">
