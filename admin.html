@@ -5,11 +5,9 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Who's Up Admin</title>
   <script src="https://cdn.tailwindcss.com"></script>
-  <script src="https://www.gstatic.com/firebasejs/11.6.0/firebase-app.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/11.6.0/firebase-database.js"></script>
 </head>
 <body class="bg-gray-100 min-h-screen flex items-center justify-center">
-  <!-- Login Form -->
+  <!-- Login Section -->
   <div id="loginSection" class="text-center">
     <h1 class="text-2xl font-bold mb-4">Admin Login</h1>
     <input type="password" id="adminPassword" placeholder="Enter password"
@@ -23,19 +21,20 @@
   <div id="adminPanel" class="hidden w-full max-w-3xl p-6">
     <h1 class="text-2xl font-bold mb-4 text-center">Who's Up Admin Panel</h1>
 
-    <div class="flex justify-center gap-4 mb-4">
-      <button onclick="loadRoom('BH')" class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600">View BH</button>
-      <button onclick="loadRoom('59')" class="bg-purple-500 text-white px-4 py-2 rounded hover:bg-purple-600">View 59</button>
+    <div class="flex justify-center gap-4 mb-6">
+      <button onclick="loadRoom('BH')" class="bg-blue-500 text-white px-4 py-2 rounded">View BH</button>
+      <button onclick="loadRoom('59')" class="bg-purple-500 text-white px-4 py-2 rounded">View 59</button>
     </div>
 
-    <div class="text-center mb-4">
-      <button onclick="toggleReorder()" class="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700">Reorder Queue</button>
+    <h2 class="text-xl font-semibold mb-4 text-center" id="roomTitle">Select a room</h2>
+    <div id="playerList" class="space-y-2 mb-4"></div>
+
+    <!-- Reorder Button -->
+    <div class="text-center mt-6">
+      <button id="reorderBtn" onclick="reorderQueue()" class="hidden bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700">
+        Reorder Queue
+      </button>
     </div>
-
-    <div id="reorderMessage" class="text-green-600 text-center font-medium hidden mb-4">Queue successfully reordered!</div>
-
-    <h2 class="text-xl font-semibold mb-2 text-center" id="roomTitle">Select a room</h2>
-    <div id="playerList" class="space-y-2"></div>
 
     <!-- Back Button -->
     <div class="mt-6 text-center">
@@ -45,107 +44,6 @@
     </div>
   </div>
 
-  <script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-app.js";
-    import { getDatabase, ref, onValue, update, remove, get, set } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-database.js";
-
-    const firebaseConfig = {
-      apiKey: "AIzaSyDkEKUzUhc-nKFLnF1w0MOm6qwpKHTpfaI",
-      authDomain: "who-s-up-app.firebaseapp.com",
-      databaseURL: "https://who-s-up-app-default-rtdb.firebaseio.com",
-      projectId: "who-s-up-app",
-      storageBucket: "who-s-up-app.appspot.com",
-      messagingSenderId: "167292375113",
-      appId: "1:167292375113:web:ce718a1aab4852fe5daf98"
-    };
-
-    const app = initializeApp(firebaseConfig);
-    const db = getDatabase(app);
-
-    let currentRoom = null;
-
-    window.checkPassword = function () {
-      const input = document.getElementById("adminPassword").value.trim();
-      if (input === "afia") {
-        document.getElementById("loginSection").classList.add("hidden");
-        document.getElementById("adminPanel").classList.remove("hidden");
-      } else {
-        alert("Incorrect password");
-      }
-    };
-
-    window.loadRoom = function (room) {
-      currentRoom = room;
-      document.getElementById("roomTitle").textContent = `Room: ${room}`;
-      const playersRef = ref(db, `rooms/${room}/players`);
-      onValue(playersRef, (snapshot) => {
-        const data = snapshot.val() || {};
-        const playerList = document.getElementById("playerList");
-        playerList.innerHTML = "";
-
-        Object.entries(data).forEach(([key, player]) => {
-          const div = document.createElement("div");
-          div.className = "flex items-center justify-between bg-white p-3 rounded shadow";
-
-          div.innerHTML = `
-            <div class="flex items-center gap-3">
-              <div class="w-8 h-8 rounded-full" style="background:${player.color}"></div>
-              <span class="font-semibold">${player.name}</span>
-            </div>
-            <div class="flex gap-2">
-              <button onclick="removePlayer('${room}', '${key}')" class="bg-red-500 text-white px-2 py-1 rounded text-sm">Remove</button>
-              <button onclick="skipPlayer('${room}', '${key}')" class="bg-yellow-500 text-white px-2 py-1 rounded text-sm">Skip</button>
-            </div>
-          `;
-          playerList.appendChild(div);
-        });
-      });
-    };
-
-    window.removePlayer = (room, key) => {
-      const playerRef = ref(db, `rooms/${room}/players/${key}`);
-      remove(playerRef);
-    };
-
-    window.skipPlayer = (room, key) => {
-      const playerRef = ref(db, `rooms/${room}/players/${key}`);
-      update(playerRef, { skip: true });
-    };
-
-    window.toggleReorder = async () => {
-      if (!currentRoom) return;
-
-      const input = prompt("Enter player names in the order you want (comma separated):\nExample: Tia, Dan, Veronica");
-      if (!input) return;
-
-      const namesInOrder = input.split(",").map(n => n.trim().toLowerCase());
-      const now = Date.now();
-
-      const playersRef = ref(db, `rooms/${currentRoom}/players`);
-      const snapshot = await get(playersRef);
-      const data = snapshot.val() || {};
-
-      const updates = {};
-      let index = 0;
-
-      for (let name of namesInOrder) {
-        const entry = Object.entries(data).find(([key]) => key.toLowerCase() === name);
-        if (entry) {
-          updates[entry[0]] = { ...entry[1], joinedAt: now + index };
-          index++;
-        }
-      }
-
-      for (const [key, val] of Object.entries(updates)) {
-        await set(ref(db, `rooms/${currentRoom}/players/${key}`), val);
-      }
-
-      loadRoom(currentRoom);
-
-      const msg = document.getElementById("reorderMessage");
-      msg.classList.remove("hidden");
-      setTimeout(() => msg.classList.add("hidden"), 3000);
-    };
-  </script>
+  <script type="module" src="admin.js"></script>
 </body>
 </html>
