@@ -20,6 +20,17 @@
       transform: translateY(0);
       opacity: 1;
     }
+    .taken-modal {
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      z-index: 50;
+      background: white;
+      border-radius: 0.5rem;
+      padding: 1.5rem;
+      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+    }
   </style>
 </head>
 <body class="bg-gray-100 min-h-screen p-4">
@@ -56,6 +67,14 @@
       <div class="mt-6 text-center">
         <button onclick="leaveGame()" class="text-sm text-gray-600 underline">Leave Game</button>
       </div>
+    </div>
+  </div>
+
+  <!-- Modal for Taken Name -->
+  <div id="takenModal" class="taken-modal hidden">
+    <p class="text-red-600 font-semibold text-center text-lg">Taken ):</p>
+    <div class="text-center mt-4">
+      <button onclick="closeTakenModal()" class="bg-gray-300 px-4 py-1 rounded hover:bg-gray-400">Close</button>
     </div>
   </div>
 
