@@ -8,7 +8,6 @@
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://unpkg.com/@dotlottie/player-component@2.7.12/dist/dotlottie-player.mjs" type="module"></script>
   <script defer src="https://vercel.live/_analytics/script.js"></script>
-
   <style>
     .fade-out {
       opacity: 0;
@@ -21,13 +20,23 @@
     }
 
     @keyframes fadeIn {
-      to { opacity: 1; }
+      to {
+        opacity: 1;
+      }
+    }
+
+    .transition-link {
+      transition: transform 0.2s ease, background-color 0.3s ease;
+    }
+
+    .transition-link:hover {
+      transform: scale(1.05);
     }
   </style>
 </head>
-<body class="bg-gray-100 min-h-screen flex items-center justify-center px-4">
+<body class="bg-[#fdfcf7] min-h-screen flex items-center justify-center px-4">
 
-  <!-- Lottie Loading Screen (Initially Hidden) -->
+  <!-- Lottie Loading Screen -->
   <div id="loadingScreen" class="hidden fixed inset-0 bg-white flex flex-col items-center justify-center z-50">
     <dotlottie-player
       src="https://lottie.host/926f3f69-99ed-4086-a29a-f364e02fba97/fwd3Sw5Enn.lottie"
@@ -42,32 +51,27 @@
     <p class="text-gray-700 text-sm mt-4">Loading room...</p>
   </div>
 
-  <!-- Main Landing Page -->
-  <div id="mainPage" class="fade-in bg-[#fdfcf7] p-6 rounded shadow-2xl text-center space-y-6 w-full max-w-md">
-    <img src="header.jpeg" alt="Who's Up Logo" class="w-64 mx-auto mb-6" />
+  <!-- Main Page -->
+  <div id="mainPage" class="fade-in bg-white p-6 rounded-xl shadow-2xl text-center space-y-6 w-full max-w-md">
+    <img src="header.jpeg" alt="Who's Up Logo" class="w-64 mx-auto mb-4 rounded-lg shadow-md" />
 
-    <div class="space-y-6">
-      <a href="bh.html" class="transition-link block bg-blue-500 text-white py-2 rounded hover:bg-blue-600 transition">Join BH</a>
-      <a href="59.html" class="transition-link block bg-purple-500 text-white py-2 rounded hover:bg-purple-600 transition">Join 59</a>
-      <a href="admin.html" class="transition-link block bg-gray-700 text-white py-2 rounded hover:bg-gray-800 transition">Admin</a>
+    <div class="space-y-5">
+      <a href="bh.html" class="transition-link block bg-blue-600 text-white py-3 rounded-lg hover:bg-blue-700 font-semibold">Join BH Room</a>
+      <a href="59.html" class="transition-link block bg-purple-600 text-white py-3 rounded-lg hover:bg-purple-700 font-semibold">Join 59 Room</a>
+      <a href="admin.html" class="transition-link block bg-gray-700 text-white py-3 rounded-lg hover:bg-gray-800 font-semibold">Admin Login</a>
     </div>
   </div>
 
-  <!-- JavaScript for Transition -->
+  <!-- JS: Transition Logic -->
   <script>
     document.querySelectorAll(".transition-link").forEach(link => {
       link.addEventListener("click", function (e) {
         e.preventDefault();
         const targetUrl = this.getAttribute("href");
 
-        // Show loading screen
-        const loader = document.getElementById("loadingScreen");
-        loader.classList.remove("hidden");
-
-        // Fade out main content
+        document.getElementById("loadingScreen").classList.remove("hidden");
         document.getElementById("mainPage").classList.add("fade-out");
 
-        // Redirect after 3 seconds
         setTimeout(() => {
           window.location.href = targetUrl;
         }, 3000);
