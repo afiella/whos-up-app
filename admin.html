@@ -8,9 +8,8 @@
   <script src="https://www.gstatic.com/firebasejs/11.6.0/firebase-app.js"></script>
   <script src="https://www.gstatic.com/firebasejs/11.6.0/firebase-database.js"></script>
   <style>
-    .drag-over {
-      outline: 2px dashed #3b82f6;
-      background-color: #e0f2fe;
+    .dragging {
+      opacity: 0.5;
     }
   </style>
 </head>
@@ -32,12 +31,12 @@
     <div class="flex justify-center gap-4 mb-6">
       <button onclick="loadRoom('BH')" class="bg-blue-500 text-white px-4 py-2 rounded">View BH</button>
       <button onclick="loadRoom('59')" class="bg-purple-500 text-white px-4 py-2 rounded">View 59</button>
+      <button onclick="toggleReorder()" id="reorderBtn" class="bg-green-600 text-white px-4 py-2 rounded">Reorder Queue</button>
     </div>
 
     <h2 class="text-xl font-semibold mb-2 text-center" id="roomTitle">Select a room</h2>
     <div id="playerList" class="space-y-2"></div>
 
-    <!-- Back Button -->
     <div class="mt-6 text-center">
       <a href="index.html" class="inline-block bg-gray-200 text-gray-700 px-4 py-2 rounded hover:bg-gray-300">
         ← Back to Landing Page
@@ -62,8 +61,9 @@
     const app = initializeApp(firebaseConfig);
     const db = getDatabase(app);
 
-    let currentRoom = "";
-    let currentPlayers = {};
+    let currentRoom = null;
+    let reorderMode = false;
+    let draggedElement = null;
 
     window.checkPassword = function () {
       const input = document.getElementById("adminPassword").value.trim();
@@ -80,21 +80,41 @@
       document.getElementById("roomTitle").textContent = `Room: ${room}`;
       const playersRef = ref(db, `rooms/${room}/players`);
       onValue(playersRef, (snapshot) => {
-        currentPlayers = snapshot.val() || {};
-        renderPlayers();
+        const data = snapshot.val() || {};
+        renderPlayers(data);
       });
     };
 
-    function renderPlayers() {
+    function renderPlayers(data) {
       const playerList = document.getElementById("playerList");
       playerList.innerHTML = "";
 
-      const sorted = Object.entries(currentPlayers).sort((a, b) => a[1].joinedAt - b[1].joinedAt);
+      const sorted = Object.entries(data)
+        .sort(([, a], [, b]) => a.joinedAt - b.joinedAt);
+
       sorted.forEach(([key, player], index) => {
         const div = document.createElement("div");
-        div.className = "flex items-center justify-between bg-white p-3 rounded shadow cursor-move";
-        div.draggable = true;
-        div.dataset.name = key;
+        div.className = "flex items-center justify-between bg-white p-3 rounded shadow";
+        div.draggable = reorderMode;
+        div.dataset.key = key;
+
+        div.addEventListener("dragstart", () => {
+          draggedElement = div;
+          div.classList.add("dragging");
+        });
+        div.addEventListener("dragend", () => {
+          draggedElement = null;
+          div.classList.remove("dragging");
+        });
+        div.addEventListener("dragover", (e) => {
+          e.preventDefault();
+          const afterElement = getDragAfterElement(playerList, e.clientY);
+          if (afterElement == null) {
+            playerList.appendChild(draggedElement);
+          } else {
+            playerList.insertBefore(draggedElement, afterElement);
+          }
+        });
 
         div.innerHTML = `
           <div class="flex items-center gap-3">
@@ -106,54 +126,22 @@
             <button onclick="skipPlayer('${currentRoom}', '${key}')" class="bg-yellow-500 text-white px-2 py-1 rounded text-sm">Skip</button>
           </div>
         `;
-
-        div.addEventListener("dragstart", handleDragStart);
-        div.addEventListener("dragover", handleDragOver);
-        div.addEventListener("dragleave", handleDragLeave);
-        div.addEventListener("drop", handleDrop);
-
         playerList.appendChild(div);
       });
     }
 
-    let draggedPlayer = null;
+    function getDragAfterElement(container, y) {
+      const draggableElements = [...container.querySelectorAll(".flex:not(.dragging)")];
 
-    function handleDragStart(e) {
-      draggedPlayer = e.currentTarget;
-    }
-
-    function handleDragOver(e) {
-      e.preventDefault();
-      e.currentTarget.classList.add("drag-over");
-    }
-
-    function handleDragLeave(e) {
-      e.currentTarget.classList.remove("drag-over");
-    }
-
-    function handleDrop(e) {
-      e.preventDefault();
-      e.currentTarget.classList.remove("drag-over");
-
-      const dropTarget = e.currentTarget;
-      if (!draggedPlayer || draggedPlayer === dropTarget) return;
-
-      const playerList = document.getElementById("playerList");
-      const children = [...playerList.children];
-      const draggedIndex = children.indexOf(draggedPlayer);
-      const targetIndex = children.indexOf(dropTarget);
-
-      if (draggedIndex > -1 && targetIndex > -1 && draggedIndex !== targetIndex) {
-        const entries = Object.entries(currentPlayers).sort((a, b) => a[1].joinedAt - b[1].joinedAt);
-        const reordered = [...entries];
-        const [moved] = reordered.splice(draggedIndex, 1);
-        reordered.splice(targetIndex, 0, moved);
-
-        reordered.forEach(([key, player], idx) => {
-          const playerRef = ref(db, `rooms/${currentRoom}/players/${key}`);
-          update(playerRef, { joinedAt: Date.now() + idx });
-        });
-      }
+      return draggableElements.reduce((closest, child) => {
+        const box = child.getBoundingClientRect();
+        const offset = y - box.top - box.height / 2;
+        if (offset < 0 && offset > closest.offset) {
+          return { offset: offset, element: child };
+        } else {
+          return closest;
+        }
+      }, { offset: Number.NEGATIVE_INFINITY }).element;
     }
 
     window.removePlayer = (room, key) => {
@@ -164,6 +152,23 @@
     window.skipPlayer = (room, key) => {
       const playerRef = ref(db, `rooms/${room}/players/${key}`);
       update(playerRef, { skip: true });
+    };
+
+    window.toggleReorder = () => {
+      reorderMode = !reorderMode;
+      document.getElementById("reorderBtn").textContent = reorderMode ? "Save Order" : "Reorder Queue";
+
+      if (!reorderMode && currentRoom) {
+        const playerList = document.getElementById("playerList");
+        const reorderedKeys = [...playerList.children].map(div => div.dataset.key);
+        const now = Date.now();
+        reorderedKeys.forEach((key, i) => {
+          const playerRef = ref(db, `rooms/${currentRoom}/players/${key}`);
+          update(playerRef, { joinedAt: now + i });
+        });
+      } else {
+        loadRoom(currentRoom);
+      }
     };
   </script>
 </body>
