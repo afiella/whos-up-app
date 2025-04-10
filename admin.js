@@ -6,10 +6,8 @@ import {
   update,
   remove,
   set,
-  get
 } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-database.js";
 
-// Firebase config
 const firebaseConfig = {
   apiKey: "AIzaSyDkEKUzUhc-nKFLnF1w0MOm6qwpKHTpfaI",
   authDomain: "who-s-up-app.firebaseapp.com",
@@ -23,17 +21,12 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const db = getDatabase(app);
 
-const allNames = [
-  "Archie", "Ella", "Veronica", "Dan", "Alex", "Adam", "Darryl",
-  "Michael", "Tia", "Rob", "Jeremy", "Nassir", "Greg"
-];
-const colorPalette = [
-  "#2f4156", "#567c8d", "#c8d9e6", "#f5efeb", "#8c5a7f",
-  "#adb3bc", "#4697df", "#d195b2", "#f9cb9c", "#88afb7",
-  "#bdcccf", "#ede1bc"
-];
-
 let currentRoom = null;
+const roomTitle = document.getElementById("roomTitle");
+const playerList = document.getElementById("playerList");
+const reorderBtn = document.getElementById("reorderBtn");
+let reorderMode = false;
+let latestSnapshot = {};
 
 window.checkPassword = function () {
   const input = document.getElementById("adminPassword").value.trim();
@@ -47,135 +40,111 @@ window.checkPassword = function () {
 
 window.loadRoom = function (room) {
   currentRoom = room;
-  document.getElementById("roomTitle").textContent = `Room: ${room}`;
-  document.getElementById("reorderBtn").classList.remove("hidden");
-  document.getElementById("manualAdd").classList.remove("hidden");
+  roomTitle.textContent = `Room: ${room}`;
+  reorderBtn.classList.remove("hidden");
+
   const playersRef = ref(db, `rooms/${room}/players`);
   onValue(playersRef, (snapshot) => {
-    const data = snapshot.val() || {};
-    renderPlayerList(data);
-    renderDropdowns(data);
-    updateNextUp(data);
+    latestSnapshot = snapshot.val() || {};
+    displayPlayers(latestSnapshot);
   });
 };
 
-function renderPlayerList(data) {
-  const list = document.getElementById("playerList");
-  list.innerHTML = "";
+function displayPlayers(data) {
+  const players = Object.entries(data).sort(
+    (a, b) => a[1].joinedAt - b[1].joinedAt
+  );
+  const activePlayers = players.filter(([_, p]) => p.active && !p.skip);
+  const currentNext = activePlayers[0]?.[0];
 
-  const players = Object.entries(data || {}).sort((a, b) => a[1].joinedAt - b[1].joinedAt);
-
-  players.forEach(([key, player]) => {
-    const div = document.createElement("div");
-    div.className = "flex items-center justify-between bg-white p-3 rounded shadow";
-
+  playerList.innerHTML = "";
+  players.forEach(([key, player], index) => {
     let status = "Active";
     let badgeColor = "bg-green-500";
-    if (player.skip) {
-      status = "With Customer";
-      badgeColor = "bg-yellow-500";
-    }
     if (!player.active) {
       status = "Out";
       badgeColor = "bg-red-500";
+    } else if (player.skip) {
+      status = "With Customer";
+      badgeColor = "bg-yellow-500";
     }
+
+    const div = document.createElement("div");
+    div.className = "flex justify-between items-center bg-white p-3 rounded shadow";
 
     div.innerHTML = `
       <div class="flex items-center gap-3">
         <div class="w-8 h-8 rounded-full" style="background:${player.color}"></div>
         <span class="font-semibold">${player.name}</span>
-        <span class="text-xs px-2 py-1 rounded ${badgeColor} text-white">${status}</span>
+        <span class="text-xs px-2 py-1 rounded text-white ${badgeColor}">${status}</span>
+        ${
+          key === currentNext
+            ? '<span class="ml-2 text-sm text-blue-600 font-bold">(Up Now)</span>'
+            : ""
+        }
       </div>
       <div class="flex gap-2">
-        <button onclick="removePlayer('${currentRoom}', '${key}')" class="bg-red-500 text-white px-2 py-1 rounded text-sm">Remove</button>
-        <button onclick="skipPlayer('${currentRoom}', '${key}')" class="bg-yellow-500 text-white px-2 py-1 rounded text-sm">With Customer</button>
-        <button onclick="backIn('${currentRoom}', '${key}')" class="bg-green-500 text-white px-2 py-1 rounded text-sm">Back In</button>
-        <button onclick="markOut('${currentRoom}', '${key}')" class="bg-gray-500 text-white px-2 py-1 rounded text-sm">Out</button>
+        ${
+          reorderMode
+            ? `
+          <button onclick="movePlayer('${key}', -1)" class="text-lg px-2">⬆️</button>
+          <button onclick="movePlayer('${key}', 1)" class="text-lg px-2">⬇️</button>`
+            : ""
+        }
+        <button onclick="setStatus('${key}', 'active')" class="bg-green-500 text-white px-2 py-1 rounded text-sm">Back In</button>
+        <button onclick="setStatus('${key}', 'skip')" class="bg-yellow-500 text-white px-2 py-1 rounded text-sm">With Customer</button>
+        <button onclick="setStatus('${key}', 'inactive')" class="bg-gray-500 text-white px-2 py-1 rounded text-sm">Out</button>
+        <button onclick="removePlayer('${key}')" class="bg-red-500 text-white px-2 py-1 rounded text-sm">Remove</button>
       </div>
     `;
-    list.appendChild(div);
+    playerList.appendChild(div);
   });
 }
 
-function renderDropdowns(data) {
-  const takenNames = new Set(Object.keys(data));
-  const availableNames = allNames.filter(name => !takenNames.has(name));
+window.setStatus = function (name, status) {
+  const player = latestSnapshot[name];
+  if (!player) return;
+  let updates = {};
+  if (status === "active") {
+    updates = { active: true, skip: false, joinedAt: Date.now() };
+  } else if (status === "skip") {
+    updates = { active: true, skip: true, joinedAt: Date.now() };
+  } else {
+    updates = { active: false, skip: false };
+  }
+  const playerRef = ref(db, `rooms/${currentRoom}/players/${name}`);
+  update(playerRef, updates);
+};
 
-  const nameSelect = document.getElementById("addNameSelect");
-  nameSelect.innerHTML = availableNames.map(name =>
-    `<option value="${name}">${name}</option>`
-  ).join("");
-
-  const colorSelect = document.getElementById("addColorSelect");
-  colorSelect.innerHTML = colorPalette.map(c =>
-    `<option value="${c}" style="background:${c};color:black">${c}</option>`
-  ).join("");
-
-  const positionSelect = document.getElementById("addPositionSelect");
-  const count = Object.keys(data).length;
-  positionSelect.innerHTML = Array.from({ length: count + 1 }, (_, i) =>
-    `<option value="${i}">Position ${i + 1}</option>`
-  ).join("");
-}
-
-function updateNextUp(data) {
-  const players = Object.values(data || {})
-    .filter(p => p.active && !p.skip)
-    .sort((a, b) => a.joinedAt - b.joinedAt);
-  const next = players[0];
-  document.getElementById("nextUpDisplay").textContent = next?.name || "No one";
-}
-
-window.removePlayer = (room, key) => {
-  const playerRef = ref(db, `rooms/${room}/players/${key}`);
+window.removePlayer = function (name) {
+  const playerRef = ref(db, `rooms/${currentRoom}/players/${name}`);
   remove(playerRef);
 };
 
-window.skipPlayer = (room, key) => {
-  const playerRef = ref(db, `rooms/${room}/players/${key}`);
-  update(playerRef, { skip: true });
+window.reorderQueue = function () {
+  reorderMode = !reorderMode;
+  reorderBtn.textContent = reorderMode ? "Finish Reordering" : "Reorder Queue";
+  displayPlayers(latestSnapshot);
 };
 
-window.backIn = (room, key) => {
-  const playerRef = ref(db, `rooms/${room}/players/${key}`);
-  update(playerRef, { skip: false, active: true, joinedAt: Date.now() });
-};
+window.movePlayer = function (name, direction) {
+  const entries = Object.entries(latestSnapshot).sort(
+    (a, b) => a[1].joinedAt - b[1].joinedAt
+  );
+  const index = entries.findIndex(([key]) => key === name);
+  const swapIndex = index + direction;
 
-window.markOut = (room, key) => {
-  const playerRef = ref(db, `rooms/${room}/players/${key}`);
-  update(playerRef, { active: false, skip: false });
-};
+  if (index === -1 || swapIndex < 0 || swapIndex >= entries.length) return;
 
-window.addManualPlayer = async function () {
-  const name = document.getElementById("addNameSelect").value;
-  const color = document.getElementById("addColorSelect").value;
-  const position = parseInt(document.getElementById("addPositionSelect").value);
-  const status = document.querySelector('input[name="statusRadio"]:checked')?.value;
-
-  if (!name || !color || isNaN(position)) return alert("Fill out all fields.");
-
-  const snapshot = await get(ref(db, `rooms/${currentRoom}/players`));
-  const existing = snapshot.val() || {};
-
-  const ordered = Object.entries(existing).sort((a, b) => a[1].joinedAt - b[1].joinedAt);
-  const before = ordered.slice(0, position);
-  const after = ordered.slice(position);
-
-  const timestamp = Date.now();
-
-  const newPlayer = {
-    name,
-    color,
-    joinedAt: timestamp,
-    active: status === "active",
-    skip: status === "skip"
-  };
+  const now = Date.now();
+  entries[index][1].joinedAt = now + direction;
+  entries[swapIndex][1].joinedAt = now;
 
   const updates = {};
-  before.forEach(([k, v]) => updates[k] = v);
-  updates[name] = newPlayer;
-  after.forEach(([k, v]) => updates[k] = v);
+  entries.forEach(([key, val]) => {
+    updates[key] = val;
+  });
 
-  await set(ref(db, `rooms/${currentRoom}/players`), updates);
-  alert(`${name} added to position ${position + 1} in ${currentRoom}`);
+  const playersRef = ref(db, `rooms/${currentRoom}/players`);
+  set(playersRef, updates);
 };
