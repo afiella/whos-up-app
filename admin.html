@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Who's Up Admin</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://www.gstatic.com/firebasejs/11.6.0/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/11.6.0/firebase-database.js"></script>
+</head>
+<body class="bg-gray-100 min-h-screen flex items-center justify-center">
+  <div id="loginSection" class="text-center">
+    <h1 class="text-2xl font-bold mb-4">Admin Login</h1>
+    <input type="password" id="adminPassword" placeholder="Enter password"
+           class="p-2 border border-gray-300 rounded mb-4" />
+    <button onclick="checkPassword()" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">
+      Login
+    </button>
+  </div>
+
+  <div id="adminPanel" class="hidden w-full max-w-3xl p-6">
+    <h1 class="text-2xl font-bold mb-4 text-center">Who's Up Admin Panel</h1>
+    <div class="flex justify-center gap-4 mb-6">
+      <button onclick="loadRoom('BH')" class="bg-blue-500 text-white px-4 py-2 rounded">View BH</button>
+      <button onclick="loadRoom('59')" class="bg-purple-500 text-white px-4 py-2 rounded">View 59</button>
+    </div>
+    <h2 class="text-xl font-semibold mb-2 text-center" id="roomTitle">Select a room</h2>
+    <div id="playerList" class="space-y-2"></div>
+  </div>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-app.js";
+    import { getDatabase, ref, onValue, update, remove } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-database.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyDkEKUzUhc-nKFLnF1w0MOm6qwpKHTpfaI",
+      authDomain: "who-s-up-app.firebaseapp.com",
+      databaseURL: "https://who-s-up-app-default-rtdb.firebaseio.com",
+      projectId: "who-s-up-app",
+      storageBucket: "who-s-up-app.appspot.com",
+      messagingSenderId: "167292375113",
+      appId: "1:167292375113:web:ce718a1aab4852fe5daf98",
+      measurementId: "G-NPK2KV2CXY"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getDatabase(app);
+
+    const loginSection = document.getElementById("loginSection");
+    const adminPanel = document.getElementById("adminPanel");
+    const playerList = document.getElementById("playerList");
+    const roomTitle = document.getElementById("roomTitle");
+
+    function checkPassword() {
+      const input = document.getElementById("adminPassword").value.trim();
+      if (input === "afia") {
+        loginSection.classList.add("hidden");
+        adminPanel.classList.remove("hidden");
+      } else {
+        alert("Incorrect password");
+      }
+    }
+
+    function loadRoom(room) {
+      roomTitle.textContent = `Room: ${room}`;
+      const playersRef = ref(db, `rooms/${room}/players`);
+      onValue(playersRef, (snapshot) => {
+        const data = snapshot.val() || {};
+        playerList.innerHTML = "";
+
+        Object.entries(data).forEach(([key, player]) => {
+          const div = document.createElement("div");
+          div.className = "flex items-center justify-between bg-white p-3 rounded shadow";
+
+          div.innerHTML = `
+            <div class="flex items-center gap-3">
+              <div class="w-8 h-8 rounded-full" style="background:${player.color}"></div>
+              <span class="font-semibold">${player.name}</span>
+            </div>
+            <div class="flex gap-2">
+              <button onclick="removePlayer('${room}', '${key}')" class="bg-red-500 text-white px-2 py-1 rounded text-sm">Remove</button>
+              <button onclick="skipPlayer('${room}', '${key}')" class="bg-yellow-500 text-white px-2 py-1 rounded text-sm">Skip</button>
+            </div>
+          `;
+          playerList.appendChild(div);
+        });
+      });
+    }
+
+    window.removePlayer = (room, key) => {
+      const playerRef = ref(db, `rooms/${room}/players/${key}`);
+      remove(playerRef);
+    };
+
+    window.skipPlayer = (room, key) => {
+      const playerRef = ref(db, `rooms/${room}/players/${key}`);
+      update(playerRef, { skip: true });
+    };
+  </script>
+</body>
+</html>
