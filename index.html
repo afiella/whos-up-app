@@ -4,9 +4,12 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Who's Up App</title>
-  <link rel="icon" type="image/png" href="IMG_0038.png" />
+  <link rel="icon" type="image/png" href="header.jpeg" />
   <script src="https://cdn.tailwindcss.com"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/lottie-web/5.7.4/lottie.min.js"></script>
+
+  <!-- Load dotLottie player -->
+  <script src="https://unpkg.com/@dotlottie/player-component@2.7.12/dist/dotlottie-player.mjs" type="module"></script>
+
   <style>
     .fade-out {
       opacity: 0;
@@ -16,31 +19,33 @@
 </head>
 <body class="bg-gray-100 min-h-screen flex items-center justify-center px-4">
 
-  <!-- Lottie Loading Animation -->
+  <!-- Lottie Loading Screen -->
   <div id="loadingScreen" class="fixed inset-0 bg-white flex items-center justify-center z-50">
-    <div id="lottieLoader" class="w-40 h-40"></div>
+    <dotlottie-player
+      src="https://lottie.host/926f3f69-99ed-4086-a29a-f364e02fba97/fwd3Sw5Enn.lottie"
+      background="transparent"
+      speed="1"
+      style="width: 300px; height: 300px"
+      direction="1"
+      playMode="forward"
+      loop
+      autoplay
+    ></dotlottie-player>
   </div>
 
-  <!-- Main Landing Content -->
+  <!-- Main Landing Page Content -->
   <div class="bg-[#f6f4ef] p-6 rounded shadow-2xl text-center space-y-6 w-full max-w-md">
     <img src="header.jpeg" alt="Who's Up Logo" class="w-64 mx-auto mb-6" />
-    <div class="space-y-4">
+
+    <div class="space-y-5">
       <a href="bh.html" class="block bg-blue-500 text-white py-2 rounded hover:bg-blue-600 transition">Join BH Room</a>
       <a href="59.html" class="block bg-purple-500 text-white py-2 rounded hover:bg-purple-600 transition">Join 59 Room</a>
       <a href="admin.html" class="block bg-gray-700 text-white py-2 rounded hover:bg-gray-800 transition">Admin Dashboard</a>
     </div>
   </div>
 
-  <!-- Lottie Setup & Loader Hide -->
+  <!-- Hide loading animation after load -->
   <script>
-    const loader = lottie.loadAnimation({
-      container: document.getElementById('lottieLoader'),
-      renderer: 'svg',
-      loop: true,
-      autoplay: true,
-      path: 'https://lottie.host/999e1565-efea-4006-aa24-b9467881694b/7e0OlEuvR3.json'
-    });
-
     window.addEventListener("load", () => {
       const screen = document.getElementById("loadingScreen");
       screen.classList.add("fade-out");
