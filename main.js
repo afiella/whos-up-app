@@ -5,7 +5,7 @@ const firebaseConfig = {
   projectId: "who-s-up-app",
   storageBucket: "who-s-up-app.appspot.com",
   messagingSenderId: "167292375113",
-  appId: "1:167292375113:web:ce718a1aab4852fe5daf98",
+  appId: "1:167292375113:web:ce718a1aab4852fe5daf98"
 };
 
 firebase.initializeApp(firebaseConfig);
@@ -15,7 +15,7 @@ const nameList = ["Archie", "Ella", "Veronica", "Dan", "Alex", "Adam", "Darryl",
 const colorList = [
   "#2f4156", "#567c8d", "#c8d9e6", "#f5efeb", "#8c5a7f",
   "#adb3bc", "#4697df", "#d195b2", "#f9cb9c", "#88afb7",
-  "#bdcccf", "#ede1bc", "#ffddb0"
+  "#bdcccf", "#ede1bc"
 ];
 
 let currentRoom = window.location.pathname.includes("bh") ? "BH" : "59";
@@ -28,17 +28,16 @@ const queueDisplay = document.getElementById("queue");
 const joinedMessage = document.getElementById("joinedMessage");
 const nextUpDiv = document.getElementById("nextUp");
 
-function renderNameButtons(takenNames = []) {
+function renderNameButtons(disabledNames = []) {
   nameButtonsContainer.innerHTML = "";
   nameList.forEach((name, i) => {
-    if (!takenNames.includes(name)) {
-      const btn = document.createElement("button");
-      btn.textContent = name;
-      btn.className = "px-4 py-2 rounded-full text-white font-semibold";
-      btn.style.backgroundColor = colorList[i % colorList.length];
-      btn.onclick = () => selectName(name, colorList[i % colorList.length]);
-      nameButtonsContainer.appendChild(btn);
-    }
+    const btn = document.createElement("button");
+    btn.textContent = name;
+    btn.className = "px-4 py-2 rounded-full shadow text-white font-semibold transition-all transform duration-300";
+    btn.style.backgroundColor = colorList[i % colorList.length];
+    btn.style.display = disabledNames.includes(name) ? "none" : "inline-block";
+    btn.onclick = () => selectName(name, colorList[i % colorList.length]);
+    nameButtonsContainer.appendChild(btn);
   });
 }
 
@@ -54,6 +53,12 @@ function selectName(name, color) {
   db.ref(`rooms/${currentRoom}/players`).on("value", snapshot => {
     const data = snapshot.val() || {};
     updateDisplay(data);
+  });
+
+  db.ref("rooms").on("value", snapshot => {
+    const allRooms = snapshot.val() || {};
+    const allPlayers = Object.values(allRooms).flatMap(r => Object.keys(r.players || {}));
+    renderNameButtons(allPlayers);
   });
 }
 
@@ -80,6 +85,7 @@ function updateDisplay(playersMap) {
       }
 
       const div = document.createElement("div");
+      div.className = "player player-enter bg-white p-3 rounded shadow my-2";
       div.innerHTML = `
         <div class="flex items-center justify-between">
           <div class="flex items-center gap-2">
@@ -90,6 +96,11 @@ function updateDisplay(playersMap) {
         </div>
       `;
       queueDisplay.appendChild(div);
+
+      requestAnimationFrame(() => {
+        div.classList.remove("player-enter");
+        div.classList.add("player-enter-active");
+      });
     });
 
   const next = activePlayers[0];
@@ -105,7 +116,6 @@ function updateDisplay(playersMap) {
 
 function setStatus(action) {
   if (!currentUser) return;
-
   const userRef = db.ref(`rooms/${currentRoom}/players/${currentUser.name}`);
 
   if (action === "active" || action === "skip") {
@@ -119,10 +129,7 @@ function setStatus(action) {
   }
 
   if (action === "inactive") {
-    const updates = {
-      active: false,
-      skip: false
-    };
+    const updates = { active: false, skip: false };
     userRef.update(updates);
     currentUser = { ...currentUser, ...updates };
   }
@@ -130,17 +137,9 @@ function setStatus(action) {
 
 function leaveGame() {
   if (!currentUser) return;
-
   db.ref(`rooms/${currentRoom}/players/${currentUser.name}`).remove();
   localStorage.removeItem("currentUser");
   window.location.href = "index.html";
 }
-
-// Watch for name updates and disable taken names live
-db.ref(`rooms/${currentRoom}/players`).on("value", snapshot => {
-  const players = snapshot.val() || {};
-  const takenNames = Object.keys(players);
-  renderNameButtons(takenNames);
-});
 
 renderNameButtons();
