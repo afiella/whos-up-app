@@ -23,11 +23,16 @@
   <div id="adminPanel" class="hidden w-full max-w-3xl p-6">
     <h1 class="text-2xl font-bold mb-4 text-center">Who's Up Admin Panel</h1>
 
-    <div class="flex justify-center gap-4 mb-6">
-      <button onclick="loadRoom('BH')" class="bg-blue-500 text-white px-4 py-2 rounded">View BH</button>
-      <button onclick="loadRoom('59')" class="bg-purple-500 text-white px-4 py-2 rounded">View 59</button>
+    <div class="flex justify-center gap-4 mb-4">
+      <button onclick="loadRoom('BH')" class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600">View BH</button>
+      <button onclick="loadRoom('59')" class="bg-purple-500 text-white px-4 py-2 rounded hover:bg-purple-600">View 59</button>
+    </div>
+
+    <div class="text-center mb-4">
       <button onclick="toggleReorder()" class="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700">Reorder Queue</button>
     </div>
+
+    <div id="reorderMessage" class="text-green-600 text-center font-medium hidden mb-4">Queue successfully reordered!</div>
 
     <h2 class="text-xl font-semibold mb-2 text-center" id="roomTitle">Select a room</h2>
     <div id="playerList" class="space-y-2"></div>
@@ -42,7 +47,7 @@
 
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-app.js";
-    import { getDatabase, ref, onValue, update, remove, set } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-database.js";
+    import { getDatabase, ref, onValue, update, remove, get, set } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-database.js";
 
     const firebaseConfig = {
       apiKey: "AIzaSyDkEKUzUhc-nKFLnF1w0MOm6qwpKHTpfaI",
@@ -56,6 +61,7 @@
 
     const app = initializeApp(firebaseConfig);
     const db = getDatabase(app);
+
     let currentRoom = null;
 
     window.checkPassword = function () {
@@ -106,7 +112,7 @@
       update(playerRef, { skip: true });
     };
 
-    window.toggleReorder = () => {
+    window.toggleReorder = async () => {
       if (!currentRoom) return;
 
       const input = prompt("Enter player names in the order you want (comma separated):\nExample: Tia, Dan, Veronica");
@@ -116,26 +122,29 @@
       const now = Date.now();
 
       const playersRef = ref(db, `rooms/${currentRoom}/players`);
-      onValue(playersRef, (snapshot) => {
-        const data = snapshot.val() || {};
-        const updates = {};
-        let index = 0;
+      const snapshot = await get(playersRef);
+      const data = snapshot.val() || {};
 
-        for (let name of namesInOrder) {
-          const entry = Object.entries(data).find(([key, val]) => key.toLowerCase() === name);
-          if (entry) {
-            updates[entry[0]] = { ...entry[1], joinedAt: now + index };
-            index++;
-          }
+      const updates = {};
+      let index = 0;
+
+      for (let name of namesInOrder) {
+        const entry = Object.entries(data).find(([key]) => key.toLowerCase() === name);
+        if (entry) {
+          updates[entry[0]] = { ...entry[1], joinedAt: now + index };
+          index++;
         }
+      }
 
-        Object.entries(updates).forEach(([key, val]) => {
-          const refToPlayer = ref(db, `rooms/${currentRoom}/players/${key}`);
-          set(refToPlayer, val);
-        });
+      for (const [key, val] of Object.entries(updates)) {
+        await set(ref(db, `rooms/${currentRoom}/players/${key}`), val);
+      }
 
-        alert("Order updated!");
-      }, { onlyOnce: true });
+      loadRoom(currentRoom);
+
+      const msg = document.getElementById("reorderMessage");
+      msg.classList.remove("hidden");
+      setTimeout(() => msg.classList.add("hidden"), 3000);
     };
   </script>
 </body>
