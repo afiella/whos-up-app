@@ -20,6 +20,17 @@
       transform: translateY(0);
       opacity: 1;
     }
+    .taken-modal {
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      z-index: 50;
+      background: white;
+      border-radius: 0.5rem;
+      padding: 1.5rem;
+      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+    }
   </style>
 </head>
 <body class="bg-gray-100 min-h-screen p-4">
@@ -60,10 +71,10 @@
   </div>
 
   <!-- Modal for Taken Name -->
-  <div id="takenModal" class="hidden fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50">
-    <div class="bg-white p-6 rounded shadow-lg text-center">
-      <p class="text-lg font-semibold text-red-500 mb-4">Name is already taken ):</p>
-      <button id="closeModal" class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600">OK</button>
+  <div id="takenModal" class="taken-modal hidden">
+    <p class="text-red-600 font-semibold text-center text-lg">Taken ):</p>
+    <div class="text-center mt-4">
+      <button onclick="closeTakenModal()" class="bg-gray-300 px-4 py-1 rounded hover:bg-gray-400">Close</button>
     </div>
   </div>
 
