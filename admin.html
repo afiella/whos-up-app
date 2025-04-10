@@ -7,11 +7,6 @@
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://www.gstatic.com/firebasejs/11.6.0/firebase-app.js"></script>
   <script src="https://www.gstatic.com/firebasejs/11.6.0/firebase-database.js"></script>
-  <style>
-    .dragging {
-      opacity: 0.5;
-    }
-  </style>
 </head>
 <body class="bg-gray-100 min-h-screen flex items-center justify-center">
   <!-- Login Form -->
@@ -31,12 +26,13 @@
     <div class="flex justify-center gap-4 mb-6">
       <button onclick="loadRoom('BH')" class="bg-blue-500 text-white px-4 py-2 rounded">View BH</button>
       <button onclick="loadRoom('59')" class="bg-purple-500 text-white px-4 py-2 rounded">View 59</button>
-      <button onclick="toggleReorder()" id="reorderBtn" class="bg-green-600 text-white px-4 py-2 rounded">Reorder Queue</button>
+      <button onclick="toggleReorder()" class="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700">Reorder Queue</button>
     </div>
 
     <h2 class="text-xl font-semibold mb-2 text-center" id="roomTitle">Select a room</h2>
     <div id="playerList" class="space-y-2"></div>
 
+    <!-- Back Button -->
     <div class="mt-6 text-center">
       <a href="index.html" class="inline-block bg-gray-200 text-gray-700 px-4 py-2 rounded hover:bg-gray-300">
         ← Back to Landing Page
@@ -55,15 +51,12 @@
       projectId: "who-s-up-app",
       storageBucket: "who-s-up-app.appspot.com",
       messagingSenderId: "167292375113",
-      appId: "1:167292375113:web:ce718a1aab4852fe5daf98",
+      appId: "1:167292375113:web:ce718a1aab4852fe5daf98"
     };
 
     const app = initializeApp(firebaseConfig);
     const db = getDatabase(app);
-
     let currentRoom = null;
-    let reorderMode = false;
-    let draggedElement = null;
 
     window.checkPassword = function () {
       const input = document.getElementById("adminPassword").value.trim();
@@ -81,68 +74,27 @@
       const playersRef = ref(db, `rooms/${room}/players`);
       onValue(playersRef, (snapshot) => {
         const data = snapshot.val() || {};
-        renderPlayers(data);
+        const playerList = document.getElementById("playerList");
+        playerList.innerHTML = "";
+
+        Object.entries(data).forEach(([key, player]) => {
+          const div = document.createElement("div");
+          div.className = "flex items-center justify-between bg-white p-3 rounded shadow";
+
+          div.innerHTML = `
+            <div class="flex items-center gap-3">
+              <div class="w-8 h-8 rounded-full" style="background:${player.color}"></div>
+              <span class="font-semibold">${player.name}</span>
+            </div>
+            <div class="flex gap-2">
+              <button onclick="removePlayer('${room}', '${key}')" class="bg-red-500 text-white px-2 py-1 rounded text-sm">Remove</button>
+              <button onclick="skipPlayer('${room}', '${key}')" class="bg-yellow-500 text-white px-2 py-1 rounded text-sm">Skip</button>
+            </div>
+          `;
+          playerList.appendChild(div);
+        });
       });
     };
-
-    function renderPlayers(data) {
-      const playerList = document.getElementById("playerList");
-      playerList.innerHTML = "";
-
-      const sorted = Object.entries(data)
-        .sort(([, a], [, b]) => a.joinedAt - b.joinedAt);
-
-      sorted.forEach(([key, player], index) => {
-        const div = document.createElement("div");
-        div.className = "flex items-center justify-between bg-white p-3 rounded shadow";
-        div.draggable = reorderMode;
-        div.dataset.key = key;
-
-        div.addEventListener("dragstart", () => {
-          draggedElement = div;
-          div.classList.add("dragging");
-        });
-        div.addEventListener("dragend", () => {
-          draggedElement = null;
-          div.classList.remove("dragging");
-        });
-        div.addEventListener("dragover", (e) => {
-          e.preventDefault();
-          const afterElement = getDragAfterElement(playerList, e.clientY);
-          if (afterElement == null) {
-            playerList.appendChild(draggedElement);
-          } else {
-            playerList.insertBefore(draggedElement, afterElement);
-          }
-        });
-
-        div.innerHTML = `
-          <div class="flex items-center gap-3">
-            <div class="w-8 h-8 rounded-full" style="background:${player.color}"></div>
-            <span class="font-semibold">${player.name}</span>
-          </div>
-          <div class="flex gap-2">
-            <button onclick="removePlayer('${currentRoom}', '${key}')" class="bg-red-500 text-white px-2 py-1 rounded text-sm">Remove</button>
-            <button onclick="skipPlayer('${currentRoom}', '${key}')" class="bg-yellow-500 text-white px-2 py-1 rounded text-sm">Skip</button>
-          </div>
-        `;
-        playerList.appendChild(div);
-      });
-    }
-
-    function getDragAfterElement(container, y) {
-      const draggableElements = [...container.querySelectorAll(".flex:not(.dragging)")];
-
-      return draggableElements.reduce((closest, child) => {
-        const box = child.getBoundingClientRect();
-        const offset = y - box.top - box.height / 2;
-        if (offset < 0 && offset > closest.offset) {
-          return { offset: offset, element: child };
-        } else {
-          return closest;
-        }
-      }, { offset: Number.NEGATIVE_INFINITY }).element;
-    }
 
     window.removePlayer = (room, key) => {
       const playerRef = ref(db, `rooms/${room}/players/${key}`);
@@ -155,20 +107,35 @@
     };
 
     window.toggleReorder = () => {
-      reorderMode = !reorderMode;
-      document.getElementById("reorderBtn").textContent = reorderMode ? "Save Order" : "Reorder Queue";
+      if (!currentRoom) return;
 
-      if (!reorderMode && currentRoom) {
-        const playerList = document.getElementById("playerList");
-        const reorderedKeys = [...playerList.children].map(div => div.dataset.key);
-        const now = Date.now();
-        reorderedKeys.forEach((key, i) => {
-          const playerRef = ref(db, `rooms/${currentRoom}/players/${key}`);
-          update(playerRef, { joinedAt: now + i });
+      const input = prompt("Enter player names in the order you want (comma separated):\nExample: Tia, Dan, Veronica");
+      if (!input) return;
+
+      const namesInOrder = input.split(",").map(n => n.trim().toLowerCase());
+      const now = Date.now();
+
+      const playersRef = ref(db, `rooms/${currentRoom}/players`);
+      onValue(playersRef, (snapshot) => {
+        const data = snapshot.val() || {};
+        const updates = {};
+        let index = 0;
+
+        for (let name of namesInOrder) {
+          const entry = Object.entries(data).find(([key, val]) => key.toLowerCase() === name);
+          if (entry) {
+            updates[entry[0]] = { ...entry[1], joinedAt: now + index };
+            index++;
+          }
+        }
+
+        Object.entries(updates).forEach(([key, val]) => {
+          const refToPlayer = ref(db, `rooms/${currentRoom}/players/${key}`);
+          set(refToPlayer, val);
         });
-      } else {
-        loadRoom(currentRoom);
-      }
+
+        alert("Order updated!");
+      }, { onlyOnce: true });
     };
   </script>
 </body>
