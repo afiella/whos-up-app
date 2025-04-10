@@ -77,6 +77,7 @@ function updateDisplay(playersMap) {
       }
 
       const div = document.createElement("div");
+      div.className = "player player-enter mb-2";
       div.innerHTML = `
         <div class="flex items-center justify-between">
           <div class="flex items-center gap-2">
@@ -87,6 +88,12 @@ function updateDisplay(playersMap) {
         </div>
       `;
       queueDisplay.appendChild(div);
+
+      // Animate slide-in
+      requestAnimationFrame(() => {
+        div.classList.remove("player-enter");
+        div.classList.add("player-enter-active");
+      });
     });
 
   const next = activePlayers[0];
@@ -109,7 +116,7 @@ function setStatus(action) {
     const updates = {
       active: true,
       skip: action === "skip",
-      joinedAt: Date.now() // Always update joinedAt to move to the end
+      joinedAt: Date.now() // Push to end of line
     };
     userRef.update(updates);
     currentUser = { ...currentUser, ...updates };
@@ -128,13 +135,8 @@ function setStatus(action) {
 function leaveGame() {
   if (!currentUser) return;
 
-  // Remove player from Firebase
   db.ref(`rooms/${currentRoom}/players/${currentUser.name}`).remove();
-
-  // Clear from localStorage
   localStorage.removeItem("currentUser");
-
-  // Redirect to landing page
   window.location.href = "index.html";
 }
 
