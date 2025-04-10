@@ -3,55 +3,62 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>59 Room</title>
+  <title>Who's Up – 59 Room</title>
   <script src="https://cdn.tailwindcss.com"></script>
-  <script src="https://www.gstatic.com/firebasejs/11.6.0/firebase-app.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/11.6.0/firebase-database.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
   <style>
-    #nameButtons button {
-      animation: popIn 0.4s ease-in-out;
+    .player {
+      transition: transform 0.4s ease, opacity 0.3s ease;
+      will-change: transform, opacity;
     }
-
-    @keyframes popIn {
-      from {
-        opacity: 0;
-        transform: scale(0.9);
-      }
-      to {
-        opacity: 1;
-        transform: scale(1);
-      }
+    .player-enter {
+      transform: translateY(20px);
+      opacity: 0;
+    }
+    .player-enter-active {
+      transform: translateY(0);
+      opacity: 1;
     }
   </style>
 </head>
 <body class="bg-gray-100 min-h-screen p-4">
-  <!-- Name Selection Section -->
-  <div id="nameSelect" class="max-w-md mx-auto bg-white shadow-lg p-6 rounded-lg">
-    <h1 class="text-2xl font-bold text-center mb-4">Join 59 Room</h1>
-    <p class="text-center mb-2">Select your name:</p>
-    <div id="nameButtons" class="grid grid-cols-3 gap-4 justify-center"></div>
-  </div>
-
-  <!-- Main Screen After Joining -->
-  <div id="mainScreen" class="hidden max-w-md mx-auto bg-white shadow-lg p-6 rounded-lg mt-6">
-    <h2 class="text-xl font-semibold mb-2 text-center">Welcome to 59 Room</h2>
-    <p id="joinedMessage" class="text-green-600 font-medium text-center mb-4"></p>
-
-    <div id="nextUp" class="text-center mb-4 text-lg font-semibold text-blue-700"></div>
-
-    <div id="queue" class="space-y-2 mb-6"></div>
-
-    <div class="flex justify-center gap-4 mb-4">
-      <button onclick="setStatus('skip')" class="bg-yellow-400 text-white px-4 py-2 rounded">With Customer</button>
-      <button onclick="setStatus('active')" class="bg-green-500 text-white px-4 py-2 rounded">Back In</button>
-      <button onclick="setStatus('inactive')" class="bg-red-500 text-white px-4 py-2 rounded">Out of Rotation</button>
+  <div class="max-w-xl mx-auto bg-white p-6 rounded-lg shadow-lg">
+    <!-- Name Select Section -->
+    <div id="nameSelect">
+      <h1 class="text-xl font-bold text-center mb-4">Who's Up – 59 Room</h1>
+      <p class="text-center mb-2">Select Your Name</p>
+      <div id="nameButtons" class="flex flex-wrap gap-3 justify-center mb-4"></div>
     </div>
 
-    <div class="text-center">
-      <button onclick="leaveGame()" class="text-sm text-gray-500 underline">Leave Game</button>
+    <!-- Main Screen -->
+    <div id="mainScreen" class="hidden">
+      <div class="text-center mb-4">
+        <p id="joinedMessage" class="text-green-600 font-medium"></p>
+      </div>
+
+      <div class="text-center mb-4">
+        <h2 class="text-lg font-semibold mb-1">Next Up</h2>
+        <div id="nextUp" class="font-bold text-blue-600"></div>
+      </div>
+
+      <div class="flex justify-center gap-3 mb-6">
+        <button onclick="setStatus('active')" class="bg-green-500 text-white px-4 py-2 rounded-full hover:bg-green-600">Back In</button>
+        <button onclick="setStatus('skip')" class="bg-yellow-500 text-white px-4 py-2 rounded-full hover:bg-yellow-600">With Customer</button>
+        <button onclick="setStatus('inactive')" class="bg-red-500 text-white px-4 py-2 rounded-full hover:bg-red-600">Out of Rotation</button>
+      </div>
+
+      <div>
+        <h2 class="text-md font-semibold mb-2">Player Queue:</h2>
+        <div id="queue" class="space-y-2"></div>
+      </div>
+
+      <div class="mt-6 text-center">
+        <button onclick="leaveGame()" class="text-sm text-gray-600 underline">Leave Game</button>
+      </div>
     </div>
   </div>
 
-  <script type="module" src="main.js"></script>
+  <script src="main.js"></script>
 </body>
 </html>
