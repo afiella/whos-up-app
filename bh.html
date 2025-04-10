@@ -9,6 +9,24 @@
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
   <script defer src="main.js"></script>
+  
+  <style>
+  .player {
+    transition: transform 0.4s ease, opacity 0.3s ease;
+    will-change: transform, opacity;
+  }
+
+  .player-enter {
+    transform: translateY(20px);
+    opacity: 0;
+  }
+
+  .player-enter-active {
+    transform: translateY(0);
+    opacity: 1;
+  }
+</style>
+  
 </head>
 <body class="bg-gray-100 flex items-center justify-center min-h-screen">
   <div class="bg-white p-6 rounded shadow-md w-full max-w-md">
