@@ -24,10 +24,39 @@ const playerList = document.getElementById("playerList");
 const reorderToggle = document.getElementById("reorderToggle");
 
 window.checkPassword = function () {
+ const tempPasswords = {
+  BH: "bhmod",
+  "59": "59mod"
+};
+
+window.checkPassword = function () {
   const input = document.getElementById("adminPassword").value.trim();
+  const roleLabel = document.getElementById("roleLabel");
+
   if (input === "afia") {
+    // Full Admin Access
     document.getElementById("loginSection").classList.add("hidden");
     document.getElementById("adminPanel").classList.remove("hidden");
+    roleLabel.textContent = "Logged in as: Admin";
+  } else if (input === tempPasswords["BH"] || input === tempPasswords["59"]) {
+    // Temp Moderator Access
+    const room = input === tempPasswords["BH"] ? "BH" : "59";
+    currentRoom = room;
+
+    document.getElementById("loginSection").classList.add("hidden");
+    document.getElementById("adminPanel").classList.remove("hidden");
+    document.getElementById("roomTitle").textContent = `Room: ${room}`;
+    roleLabel.textContent = `Logged in as: Moderator – ${room} Room`;
+
+    // Hide room switching and reorder for temp mods
+    document.getElementById("reorderToggle").classList.add("hidden");
+    document.querySelectorAll("button").forEach(btn => {
+      if (btn.textContent.includes("View BH") || btn.textContent.includes("View 59")) {
+        btn.classList.add("hidden");
+      }
+    });
+
+    loadRoom(room);
   } else {
     alert("Incorrect password.");
   }
