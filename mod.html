@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Moderator Login</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 min-h-screen flex items-center justify-center px-4">
+  <div class="bg-white p-6 rounded shadow-lg w-full max-w-md text-center">
+    <h1 class="text-2xl font-bold mb-4">Moderator Login</h1>
+    <input id="modPassword" type="password" placeholder="Enter moderator password"
+           class="w-full p-2 border border-gray-300 rounded mb-4" />
+    <button onclick="redirectModerator()" class="bg-blue-600 text-white w-full py-2 rounded hover:bg-blue-700">
+      Login
+    </button>
+    <p id="errorMsg" class="text-red-600 mt-3 hidden">Invalid password</p>
+  </div>
+
+  <script>
+    function redirectModerator() {
+      const input = document.getElementById("modPassword").value.trim().toLowerCase();
+      const errorMsg = document.getElementById("errorMsg");
+
+      if (input === "bhmod") {
+        window.location.href = "bhmod.html";
+      } else if (input === "59mod") {
+        window.location.href = "59mod.html";
+      } else {
+        errorMsg.classList.remove("hidden");
+      }
+    }
+  </script>
+</body>
+</html>
