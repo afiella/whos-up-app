@@ -5,7 +5,7 @@ import {
   onValue,
   update,
   remove,
-  set,
+  set
 } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-database.js";
 
 const firebaseConfig = {
@@ -15,18 +15,19 @@ const firebaseConfig = {
   projectId: "who-s-up-app",
   storageBucket: "who-s-up-app.appspot.com",
   messagingSenderId: "167292375113",
-  appId: "1:167292375113:web:ce718a1aab4852fe5daf98",
+  appId: "1:167292375113:web:ce718a1aab4852fe5daf98"
 };
 
 const app = initializeApp(firebaseConfig);
 const db = getDatabase(app);
 
 let currentRoom = null;
+let latestSnapshot = {};
+let reorderMode = false;
+
 const roomTitle = document.getElementById("roomTitle");
 const playerList = document.getElementById("playerList");
 const reorderBtn = document.getElementById("reorderBtn");
-let reorderMode = false;
-let latestSnapshot = {};
 
 window.checkPassword = function () {
   const input = document.getElementById("adminPassword").value.trim();
@@ -58,8 +59,7 @@ function displayPlayers(data) {
   const currentNext = activePlayers[0]?.[0];
 
   playerList.innerHTML = "";
-
-  players.forEach(([key, player], index) => {
+  players.forEach(([key, player]) => {
     let status = "Active";
     let badgeColor = "bg-green-500";
     if (!player.active) {
@@ -74,7 +74,7 @@ function displayPlayers(data) {
     div.className =
       "flex justify-between items-center bg-white p-3 rounded shadow cursor-pointer";
     div.setAttribute("draggable", reorderMode);
-    div.dataset.key = key;
+    div.dataset.name = key;
 
     div.innerHTML = `
       <div class="flex items-center gap-3">
@@ -87,64 +87,27 @@ function displayPlayers(data) {
             : ""
         }
       </div>
-      <div class="flex gap-2">
-        <button onclick="setStatus('${key}', 'active')" class="bg-green-500 text-white px-2 py-1 rounded text-sm">In</button>
-        <button onclick="setStatus('${key}', 'skip')" class="bg-yellow-500 text-white px-2 py-1 rounded text-sm">With Customer</button>
-        <button onclick="setStatus('${key}', 'inactive')" class="bg-gray-500 text-white px-2 py-1 rounded text-sm">Out</button>
-        <button onclick="removePlayer('${key}')" class="bg-red-500 text-white px-2 py-1 rounded text-sm">✕</button>
-      </div>
+      ${
+        reorderMode
+          ? `
+        <div class="flex gap-2">
+          <button onclick="movePlayer('${key}', -1)" class="text-lg px-2">⬆️</button>
+          <button onclick="movePlayer('${key}', 1)" class="text-lg px-2">⬇️</button>
+        </div>
+      `
+          : `
+        <div class="flex gap-2 text-sm">
+          <button onclick="setStatus('${key}', 'active')" class="bg-green-500 text-white px-2 py-1 rounded">In</button>
+          <button onclick="setStatus('${key}', 'skip')" class="bg-yellow-500 text-white px-2 py-1 rounded">With Customer</button>
+          <button onclick="setStatus('${key}', 'inactive')" class="bg-gray-500 text-white px-2 py-1 rounded">Out</button>
+          <button onclick="removePlayer('${key}')" class="bg-red-500 text-white px-2 py-1 rounded">✕</button>
+        </div>
+      `
+      }
     `;
-
-    if (reorderMode) {
-      div.addEventListener("dragstart", dragStart);
-      div.addEventListener("dragover", dragOver);
-      div.addEventListener("drop", drop);
-    }
 
     playerList.appendChild(div);
   });
-}
-
-let dragSourceKey = null;
-
-function dragStart(e) {
-  dragSourceKey = e.currentTarget.dataset.key;
-}
-
-function dragOver(e) {
-  e.preventDefault();
-}
-
-function drop(e) {
-  e.preventDefault();
-  const targetKey = e.currentTarget.dataset.key;
-  if (dragSourceKey === targetKey) return;
-
-  const entries = Object.entries(latestSnapshot).sort(
-    (a, b) => a[1].joinedAt - b[1].joinedAt
-  );
-  const reordered = [];
-
-  // Rebuild order
-  entries.forEach(([key]) => {
-    if (key !== dragSourceKey && key !== targetKey) {
-      reordered.push(key);
-    } else if (key === targetKey) {
-      if (dragSourceKey) reordered.push(dragSourceKey);
-      reordered.push(targetKey);
-    }
-  });
-
-  // Add any missing ones
-  if (!reordered.includes(dragSourceKey)) reordered.push(dragSourceKey);
-
-  const now = Date.now();
-  reordered.forEach((key, i) => {
-    latestSnapshot[key].joinedAt = now + i;
-  });
-
-  const playersRef = ref(db, `rooms/${currentRoom}/players`);
-  set(playersRef, latestSnapshot);
 }
 
 window.setStatus = function (name, status) {
@@ -171,4 +134,26 @@ window.reorderQueue = function () {
   reorderMode = !reorderMode;
   reorderBtn.textContent = reorderMode ? "Finish Reordering" : "Reorder Queue";
   displayPlayers(latestSnapshot);
+};
+
+window.movePlayer = function (name, direction) {
+  const entries = Object.entries(latestSnapshot).sort(
+    (a, b) => a[1].joinedAt - b[1].joinedAt
+  );
+  const index = entries.findIndex(([key]) => key === name);
+  const swapIndex = index + direction;
+
+  if (index === -1 || swapIndex < 0 || swapIndex >= entries.length) return;
+
+  const now = Date.now();
+  entries[index][1].joinedAt = now + direction;
+  entries[swapIndex][1].joinedAt = now;
+
+  const updates = {};
+  entries.forEach(([key, val]) => {
+    updates[key] = val;
+  });
+
+  const playersRef = ref(db, `rooms/${currentRoom}/players`);
+  set(playersRef, updates);
 };
