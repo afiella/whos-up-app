@@ -3,14 +3,25 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>BH Moderator</title>
+  <title>BH Room Moderator</title>
   <script src="https://cdn.tailwindcss.com"></script>
 </head>
-<body class="bg-gray-100 min-h-screen p-4">
-  <div class="max-w-md mx-auto bg-white p-6 rounded shadow">
-    <h1 class="text-xl font-bold text-center mb-2">Moderator – BH Room</h1>
-    <p class="text-sm text-center text-gray-600 mb-4">You are viewing and managing BH room only.</p>
+<body class="bg-gray-100 min-h-screen flex items-center justify-center px-4">
+  <!-- Login Section -->
+  <div id="loginSection" class="text-center w-full max-w-md">
+    <h1 class="text-2xl font-bold mb-4">BH Room Mod Login</h1>
+    <input type="password" id="modPassword" placeholder="Enter password"
+           class="p-2 w-full border border-gray-300 rounded mb-4" />
+    <button onclick="checkModPassword()" class="bg-teal-600 text-white px-4 py-2 rounded hover:bg-teal-700 w-full">
+      Login
+    </button>
+  </div>
 
+  <!-- Moderator Panel -->
+  <div id="modPanel" class="hidden w-full max-w-md p-4">
+    <h1 class="text-2xl font-bold text-center mb-4">BH Moderator Panel</h1>
+    <p class="text-center text-sm text-gray-500 mb-2">You are logged in as BH Mod</p>
+    
     <div id="playerList" class="space-y-3"></div>
 
     <div class="mt-6 text-center">
