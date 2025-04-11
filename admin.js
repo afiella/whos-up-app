@@ -24,12 +24,6 @@ const playerList = document.getElementById("playerList");
 const reorderToggle = document.getElementById("reorderToggle");
 
 window.checkPassword = function () {
- const tempPasswords = {
-  BH: "bhmod",
-  "59": "59mod"
-};
-
-window.checkPassword = function () {
   const input = document.getElementById("adminPassword").value.trim();
   const roleLabel = document.getElementById("roleLabel");
 
