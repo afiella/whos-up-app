@@ -11,8 +11,18 @@
       overflow: hidden;
       transition: max-height 0.3s ease;
     }
+
     .expanded .action-buttons {
       max-height: 200px;
+    }
+
+    .dragging {
+      opacity: 0.5;
+    }
+
+    .drag-over {
+      border: 2px dashed #3b82f6;
+      background-color: #eff6ff;
     }
   </style>
 </head>
@@ -36,7 +46,17 @@
       <button onclick="loadRoom('59')" class="bg-purple-500 text-white px-4 py-2 rounded">View 59</button>
     </div>
 
-    <h2 id="roomTitle" class="text-lg font-semibold mb-3 text-center">Select a room</h2>
+    <div class="text-center mb-4">
+      <h2 id="roomTitle" class="text-lg font-semibold">Select a room</h2>
+      <p class="text-sm text-gray-500" id="currentNextUp"></p>
+    </div>
+
+    <div class="text-center mb-4">
+      <button onclick="toggleReorderMode()" id="reorderToggle" class="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700">
+        Enable Reorder Mode
+      </button>
+    </div>
+
     <div id="playerList" class="space-y-3"></div>
 
     <div class="mt-6 text-center">
@@ -44,106 +64,6 @@
     </div>
   </div>
 
-  <script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-app.js";
-    import { getDatabase, ref, onValue, update, remove } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-database.js";
-
-    const firebaseConfig = {
-      apiKey: "AIzaSyDkEKUzUhc-nKFLnF1w0MOm6qwpKHTpfaI",
-      authDomain: "who-s-up-app.firebaseapp.com",
-      databaseURL: "https://who-s-up-app-default-rtdb.firebaseio.com",
-      projectId: "who-s-up-app",
-      storageBucket: "who-s-up-app.appspot.com",
-      messagingSenderId: "167292375113",
-      appId: "1:167292375113:web:ce718a1aab4852fe5daf98"
-    };
-
-    const app = initializeApp(firebaseConfig);
-    const db = getDatabase(app);
-
-    let currentRoom = "";
-
-    window.checkPassword = () => {
-      const input = document.getElementById("adminPassword").value.trim();
-      if (input === "afia") {
-        document.getElementById("loginSection").classList.add("hidden");
-        document.getElementById("adminPanel").classList.remove("hidden");
-      } else {
-        alert("Incorrect password.");
-      }
-    };
-
-    window.loadRoom = (room) => {
-      currentRoom = room;
-      document.getElementById("roomTitle").textContent = `Room: ${room}`;
-      const playersRef = ref(db, `rooms/${room}/players`);
-      onValue(playersRef, (snapshot) => {
-        const players = snapshot.val() || {};
-        renderPlayers(players);
-      });
-    };
-
-    function renderPlayers(players) {
-      const playerList = document.getElementById("playerList");
-      playerList.innerHTML = "";
-
-      Object.entries(players).forEach(([key, player]) => {
-        const status = player.skip
-          ? "With Customer"
-          : !player.active
-          ? "Out of Rotation"
-          : "Active";
-
-        const div = document.createElement("div");
-        div.className = "bg-white rounded shadow px-4 py-3";
-        div.innerHTML = `
-          <div class="flex items-center justify-between cursor-pointer player-header">
-            <div class="flex items-center gap-2">
-              <span class="w-4 h-4 rounded-full" style="background-color: ${player.color}"></span>
-              <span class="font-semibold">${player.name}</span>
-            </div>
-            <span class="text-sm text-gray-500">${status}</span>
-          </div>
-          <div class="action-buttons mt-3 space-y-2">
-            <div class="flex justify-between">
-              <button onclick="setPlayerStatus('${currentRoom}', '${key}', 'active')"
-                class="bg-green-500 text-white px-2 py-1 rounded text-sm w-full mr-1">In</button>
-              <button onclick="setPlayerStatus('${currentRoom}', '${key}', 'skip')"
-                class="bg-yellow-500 text-white px-2 py-1 rounded text-sm w-full mx-1">With Customer</button>
-              <button onclick="setPlayerStatus('${currentRoom}', '${key}', 'inactive')"
-                class="bg-gray-500 text-white px-2 py-1 rounded text-sm w-full ml-1">Out</button>
-            </div>
-            <div class="text-center">
-              <button onclick="removePlayer('${currentRoom}', '${key}')"
-                class="text-red-600 text-sm font-bold">✕ Remove</button>
-            </div>
-          </div>
-        `;
-
-        // Toggle buttons on click
-        div.querySelector('.player-header').addEventListener("click", () => {
-          div.classList.toggle("expanded");
-        });
-
-        playerList.appendChild(div);
-      });
-    }
-
-    window.setPlayerStatus = (room, name, type) => {
-      const refPath = ref(db, `rooms/${room}/players/${name}`);
-      if (type === "active") {
-        update(refPath, { active: true, skip: false, joinedAt: Date.now() });
-      } else if (type === "skip") {
-        update(refPath, { skip: true, active: true, joinedAt: Date.now() });
-      } else {
-        update(refPath, { active: false, skip: false });
-      }
-    };
-
-    window.removePlayer = (room, name) => {
-      const refPath = ref(db, `rooms/${room}/players/${name}`);
-      remove(refPath);
-    };
-  </script>
+  <script type="module" src="admin.js"></script>
 </body>
 </html>
