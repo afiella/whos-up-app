@@ -4,7 +4,8 @@ import {
   ref,
   onValue,
   update,
-  remove
+  remove,
+  set,
 } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-database.js";
 
 const firebaseConfig = {
@@ -20,82 +21,121 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const db = getDatabase(app);
 
-const room = "BH";
+const currentRoom = "BH";
 const roomTitle = document.getElementById("roomTitle");
 const playerList = document.getElementById("playerList");
+const reorderBtn = document.getElementById("reorderToggle");
+let reorderMode = false;
+let latestSnapshot = {};
 
-window.checkModPassword = function () {
-  const input = document.getElementById("modPassword").value.trim();
-  if (input === "bhmod") {
-    document.getElementById("loginSection").classList.add("hidden");
-    document.getElementById("modPanel").classList.remove("hidden");
-    loadRoom();
-  } else {
-    alert("Incorrect password");
-  }
-};
+roomTitle.textContent = `Room: ${currentRoom}`;
 
-function loadRoom() {
-  roomTitle.textContent = `Room: ${room}`;
-  const playersRef = ref(db, `rooms/${room}/players`);
-  onValue(playersRef, (snapshot) => {
-    const players = snapshot.val() || {};
-    renderPlayers(players);
-  });
-}
+const playersRef = ref(db, `rooms/${currentRoom}/players`);
+onValue(playersRef, (snapshot) => {
+  latestSnapshot = snapshot.val() || {};
+  displayPlayers(latestSnapshot);
+});
 
-function renderPlayers(players) {
-  playerList.innerHTML = "";
-  const sorted = Object.entries(players).sort(
+function displayPlayers(data) {
+  const players = Object.entries(data).sort(
     (a, b) => a[1].joinedAt - b[1].joinedAt
   );
+  const activePlayers = players.filter(([_, p]) => p.active && !p.skip);
+  const currentNext = activePlayers[0]?.[0];
 
-  sorted.forEach(([name, player]) => {
+  playerList.innerHTML = "";
+  players.forEach(([key, player]) => {
     let status = "Active";
-    let badge = "bg-green-500";
+    let badgeColor = "bg-green-500";
     if (!player.active) {
       status = "Out";
-      badge = "bg-red-500";
+      badgeColor = "bg-red-500";
     } else if (player.skip) {
       status = "With Customer";
-      badge = "bg-yellow-500";
+      badgeColor = "bg-yellow-500";
     }
 
     const div = document.createElement("div");
-    div.className = "bg-white rounded shadow px-4 py-3";
+    div.className = "flex justify-between items-center bg-white p-3 rounded shadow";
+
     div.innerHTML = `
-      <div class="flex items-center justify-between">
-        <div class="flex items-center gap-2">
-          <span class="w-4 h-4 rounded-full" style="background-color: ${player.color}"></span>
-          <span class="font-semibold">${name}</span>
-          <span class="text-xs px-2 py-1 text-white ${badge} rounded">${status}</span>
-        </div>
-        <div class="flex gap-2">
-          <button onclick="setStatus('${name}', 'active')" class="bg-green-500 text-white px-2 py-1 rounded text-xs">In</button>
-          <button onclick="setStatus('${name}', 'skip')" class="bg-yellow-500 text-white px-2 py-1 rounded text-xs">With Customer</button>
-          <button onclick="setStatus('${name}', 'inactive')" class="bg-gray-500 text-white px-2 py-1 rounded text-xs">Out</button>
-          <button onclick="removePlayer('${name}')" class="bg-red-500 text-white px-2 py-1 rounded text-xs">✕</button>
-        </div>
+      <div class="flex items-center gap-3">
+        <div class="w-8 h-8 rounded-full" style="background:${player.color}"></div>
+        <span class="font-semibold">${player.name}</span>
+        <span class="text-xs px-2 py-1 rounded text-white ${badgeColor}">${status}</span>
+        ${
+          key === currentNext
+            ? '<span class="ml-2 text-sm text-blue-600 font-bold">(Up Now)</span>'
+            : ""
+        }
+      </div>
+      <div class="flex gap-2">
+        ${
+          reorderMode
+            ? `
+          <button onclick="movePlayer('${key}', -1)" class="text-lg px-2">⬆️</button>
+          <button onclick="movePlayer('${key}', 1)" class="text-lg px-2">⬇️</button>`
+            : ""
+        }
+        <button onclick="setStatus('${key}', 'active')" class="bg-green-500 text-white px-2 py-1 rounded text-sm">In</button>
+        <button onclick="setStatus('${key}', 'skip')" class="bg-yellow-500 text-white px-2 py-1 rounded text-sm">With Customer</button>
+        <button onclick="setStatus('${key}', 'inactive')" class="bg-gray-500 text-white px-2 py-1 rounded text-sm">Out</button>
+        <button onclick="removePlayer('${key}')" class="bg-red-500 text-white px-2 py-1 rounded text-sm">✕</button>
       </div>
     `;
     playerList.appendChild(div);
   });
+
+  const nextUpDiv = document.getElementById("currentNextUp");
+  if (nextUpDiv) {
+    nextUpDiv.textContent = currentNext ? `Currently Up: ${currentNext}` : "No one is up";
+  }
 }
 
-window.setStatus = function (name, type) {
-  const playerRef = ref(db, `rooms/${room}/players/${name}`);
+window.setStatus = function (name, status) {
+  const player = latestSnapshot[name];
+  if (!player) return;
   let updates = {};
-  if (type === "active") {
+  if (status === "active") {
     updates = { active: true, skip: false, joinedAt: Date.now() };
-  } else if (type === "skip") {
+  } else if (status === "skip") {
     updates = { active: true, skip: true, joinedAt: Date.now() };
   } else {
     updates = { active: false, skip: false };
   }
+  const playerRef = ref(db, `rooms/${currentRoom}/players/${name}`);
   update(playerRef, updates);
 };
 
 window.removePlayer = function (name) {
-  const playerRef = ref(db, `rooms/${room}/players/${name}`);
+  const playerRef = ref(db, `rooms/${currentRoom}/players/${name}`);
   remove(playerRef);
+};
+
+window.toggleReorderMode = function () {
+  reorderMode = !reorderMode;
+  reorderBtn.textContent = reorderMode ? "Finish Reordering" : "Enable Reorder Mode";
+  displayPlayers(latestSnapshot);
+};
+
+window.movePlayer = function (name, direction) {
+  const entries = Object.entries(latestSnapshot).sort(
+    (a, b) => a[1].joinedAt - b[1].joinedAt
+  );
+  const index = entries.findIndex(([key]) => key === name);
+  const swapIndex = index + direction;
+
+  if (index === -1 || swapIndex < 0 || swapIndex >= entries.length) return;
+
+  const now = Date.now();
+  entries[index][1].joinedAt = now + direction;
+  entries[swapIndex][1].joinedAt = now;
+
+  const updates = {};
+  entries.forEach(([key, val]) => {
+    updates[key] = val;
+  });
+
+  const playersRef = ref(db, `rooms/${currentRoom}/players`);
+  set(playersRef, updates);
 };
