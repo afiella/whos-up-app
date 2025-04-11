@@ -34,38 +34,44 @@
   </style>
 </head>
 <body class="bg-gray-100 min-h-screen p-4">
-  <div class="max-w-xl mx-auto bg-white p-6 rounded-lg shadow-lg">
+  <div class="max-w-xl mx-auto bg-white p-6 rounded-lg shadow-lg min-h-screen flex flex-col">
+
     <!-- Name Select Section -->
     <div id="nameSelect">
       <h1 class="text-xl font-bold text-center mb-4">Who's Up – BH Room</h1>
       <p class="text-center mb-2">Select Your Name</p>
-      <div id="nameButtons" class="flex flex-wrap gap-3 justify-center mb-4"></div>
+      <div id="nameButtons" class="flex flex-wrap gap-4 justify-center mb-4"></div>
     </div>
 
     <!-- Main Screen -->
-    <div id="mainScreen" class="hidden">
-      <div class="text-center mb-4">
-        <p id="joinedMessage" class="text-green-600 font-medium"></p>
-      </div>
-
-      <div class="text-center mb-4">
-        <h2 class="text-lg font-semibold mb-1">Next Up</h2>
-        <div id="nextUp" class="font-bold text-blue-600"></div>
-      </div>
-
-      <div class="flex justify-center gap-3 mb-6">
-        <button onclick="setStatus('active')" class="bg-green-500 text-white px-4 py-2 rounded-full hover:bg-green-600">In</button>
-        <button onclick="setStatus('skip')" class="bg-yellow-500 text-white px-4 py-2 rounded-full hover:bg-yellow-600">With Customer</button>
-        <button onclick="setStatus('inactive')" class="bg-red-500 text-white px-4 py-2 rounded-full hover:bg-red-600">Out</button>
-      </div>
-
+    <div id="mainScreen" class="hidden flex flex-col flex-grow justify-between">
       <div>
-        <h2 class="text-md font-semibold mb-2">Player Queue:</h2>
-        <div id="queue" class="space-y-2"></div>
+        <div class="text-center mb-4">
+          <p id="joinedMessage" class="text-green-600 font-medium"></p>
+        </div>
+
+        <div class="text-center mb-4">
+          <h2 class="text-lg font-semibold mb-1">Next Up</h2>
+          <div id="nextUp" class="font-bold text-blue-600"></div>
+        </div>
+
+        <!-- Player Queue -->
+        <div>
+          <h2 class="text-md font-semibold mb-2">Player Queue:</h2>
+          <div id="queue" class="space-y-2"></div>
+        </div>
       </div>
 
-      <div class="mt-6 text-center">
-        <button onclick="leaveGame()" class="text-sm text-gray-600 underline">Leave Game</button>
+      <!-- Control Buttons at Bottom -->
+      <div class="mt-6">
+        <div class="flex justify-center gap-3 mb-4">
+          <button onclick="setStatus('active')" class="bg-green-500 text-white px-4 py-2 rounded-full hover:bg-green-600">In</button>
+          <button onclick="setStatus('skip')" class="bg-yellow-500 text-white px-4 py-2 rounded-full hover:bg-yellow-600">With Customer</button>
+          <button onclick="setStatus('inactive')" class="bg-red-500 text-white px-4 py-2 rounded-full hover:bg-red-600">Out of Rotation</button>
+        </div>
+        <div class="text-center">
+          <button onclick="leaveGame()" class="text-sm text-gray-600 underline">Leave Game</button>
+        </div>
       </div>
     </div>
   </div>
@@ -74,7 +80,7 @@
   <div id="takenModal" class="taken-modal hidden">
     <p class="text-red-600 font-semibold text-center text-lg">Taken ):</p>
     <div class="text-center mt-4">
-      <button onclick="closeTakenModal()" class="bg-gray-300 px-4 py-1 rounded hover:bg-gray-400">Close</button>
+      <button onclick="closeModal()" class="bg-gray-300 px-4 py-1 rounded hover:bg-gray-400">Close</button>
     </div>
   </div>
 
