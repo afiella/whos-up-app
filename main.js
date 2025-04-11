@@ -29,14 +29,15 @@ function renderNameButtons() {
   nameButtonsContainer.innerHTML = "";
   nameList.forEach((name, index) => {
     const btn = document.createElement("button");
-    btn.className = "rounded-full text-white py-2 px-4 font-medium";
-    btn.style.backgroundColor = colorList[index % colorList.length];
-    btn.textContent = name;
-    btn.onclick = () => attemptJoin(name, colorList[index % colorList.length]);
     btn.id = `btn-${name}`;
+    btn.textContent = name;
+    btn.style.backgroundColor = colorList[index % colorList.length];
+    btn.onclick = () => attemptJoin(name, colorList[index % colorList.length]);
+    btn.className = "w-20 h-20 rounded-full flex items-center justify-center text-white font-bold text-sm shadow hover:opacity-80";
     nameButtonsContainer.appendChild(btn);
   });
 
+  // Check for taken names across all rooms
   db.ref("rooms").on("value", (snapshot) => {
     const allRooms = snapshot.val() || {};
     const takenNames = new Set();
@@ -62,7 +63,7 @@ function attemptJoin(name, color) {
   const userRef = db.ref(`rooms/${currentRoom}/players/${name}`);
   userRef.once("value", (snapshot) => {
     if (snapshot.exists()) {
-      takenModal.classList.remove("hidden");
+      if (takenModal) takenModal.classList.remove("hidden");
     } else {
       joinWithName(name, color);
     }
@@ -70,7 +71,7 @@ function attemptJoin(name, color) {
 }
 
 function closeModal() {
-  takenModal.classList.add("hidden");
+  if (takenModal) takenModal.classList.add("hidden");
 }
 
 function joinWithName(name, color) {
@@ -107,7 +108,7 @@ function updateDisplay(playersMap) {
     }
 
     const div = document.createElement("div");
-    div.className = "flex items-center justify-between bg-white p-3 rounded shadow";
+    div.className = "flex items-center justify-between bg-white p-3 rounded shadow player player-enter";
     div.innerHTML = `
       <div class="flex items-center gap-2">
         <span class="inline-block w-4 h-4 rounded-full" style="background-color: ${p.color}"></span>
@@ -116,6 +117,11 @@ function updateDisplay(playersMap) {
       <span class="text-xs text-white px-2 py-1 rounded ${badgeColor}">${status}</span>
     `;
     queueDisplay.appendChild(div);
+
+    requestAnimationFrame(() => {
+      div.classList.remove("player-enter");
+      div.classList.add("player-enter-active");
+    });
   });
 
   const next = activePlayers[0];
