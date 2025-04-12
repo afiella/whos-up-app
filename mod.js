@@ -181,7 +181,7 @@ window.toggleReorderMode = function () {
   displayPlayers(latestSnapshot);
 };
 
-// Touch Support
+// Full Touch Drag with Ghost and Animation
 let touchDraggingKey = null;
 
 function handleTouchStart(e) {
