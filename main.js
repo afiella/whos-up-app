@@ -78,7 +78,10 @@ function joinWithName(name, color) {
   const joinedAt = Date.now();
   currentUser = { name, color, active: true, skip: false, joinedAt };
   db.ref(`rooms/${currentRoom}/players/${name}`).set(currentUser);
-  localStorage.setItem("currentUser", JSON.stringify(currentUser));
+  localStorage.setItem("currentUser", JSON.stringify({
+  ...currentUser,
+  room: currentRoom
+}));
   nameSelectSection.classList.add("hidden");
   mainScreen.classList.remove("hidden");
   joinedMessage.textContent = `Welcome, ${name}!`;
