@@ -1,1 +1,181 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Who's Up – 59 Moderator</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    .action-buttons {
+      max-height: 0;
+      overflow: hidden;
+      transition: max-height 0.3s ease;
+    }
 
+    .expanded .action-buttons {
+      max-height: 200px;
+    }
+
+    .dragging {
+      opacity: 0.5;
+    }
+
+    .drag-over {
+      border: 2px dashed #3b82f6;
+      background-color: #eff6ff;
+    }
+  </style>
+</head>
+<body class="bg-gray-100 min-h-screen flex items-center justify-center px-4">
+  <!-- Login Section -->
+  <div id="loginSection" class="text-center w-full max-w-md">
+    <h1 class="text-2xl font-bold mb-4">59 Room Moderator Login</h1>
+    <input type="password" id="modPassword" placeholder="Enter password"
+           class="p-2 w-full border border-gray-300 rounded mb-4" />
+    <button onclick="checkPassword()" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 w-full">
+      Login
+    </button>
+  </div>
+
+  <!-- Moderator Panel -->
+  <div id="modPanel" class="hidden w-full max-w-md p-4">
+    <h1 class="text-2xl font-bold text-center mb-4">59 Moderator Panel</h1>
+
+    <div class="text-center mb-4">
+      <h2 id="roomTitle" class="text-lg font-semibold">Room: 59</h2>
+      <p class="text-sm text-gray-500" id="currentNextUp"></p>
+    </div>
+
+    <div class="text-center mb-4">
+      <button onclick="toggleReorderMode()" id="reorderToggle" class="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700">
+        Enable Reorder Mode
+      </button>
+    </div>
+
+    <div id="playerList" class="space-y-3"></div>
+
+    <div class="mt-6 text-center">
+      <a href="index.html" class="text-sm text-blue-600 underline">← Back to Landing Page</a>
+    </div>
+  </div>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-app.js";
+    import {
+      getDatabase,
+      ref,
+      onValue,
+      update,
+      remove,
+      set
+    } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-database.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyDkEKUzUhc-nKFLnF1w0MOm6qwpKHTpfaI",
+      authDomain: "who-s-up-app.firebaseapp.com",
+      databaseURL: "https://who-s-up-app-default-rtdb.firebaseio.com",
+      projectId: "who-s-up-app",
+      storageBucket: "who-s-up-app.appspot.com",
+      messagingSenderId: "167292375113",
+      appId: "1:167292375113:web:ce718a1aab4852fe5daf98"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getDatabase(app);
+
+    const room = "59";
+    const correctPassword = "59mod";
+
+    let reorderMode = false;
+    let latestSnapshot = {};
+
+    window.checkPassword = () => {
+      const input = document.getElementById("modPassword").value.trim();
+      if (input === correctPassword) {
+        document.getElementById("loginSection").classList.add("hidden");
+        document.getElementById("modPanel").classList.remove("hidden");
+        loadRoom();
+      } else {
+        alert("Incorrect password.");
+      }
+    };
+
+    function loadRoom() {
+      const playersRef = ref(db, `rooms/${room}/players`);
+      onValue(playersRef, (snapshot) => {
+        latestSnapshot = snapshot.val() || {};
+        displayPlayers(latestSnapshot);
+      });
+    }
+
+    function displayPlayers(data) {
+      const playerList = document.getElementById("playerList");
+      const active = Object.entries(data).filter(([_, p]) => p.active && !p.skip);
+      const next = active[0]?.[0];
+      document.getElementById("currentNextUp").textContent = next ? `${next} is up next!` : "No one is currently up.";
+
+      playerList.innerHTML = "";
+
+      Object.entries(data).sort((a, b) => a[1].joinedAt - b[1].joinedAt).forEach(([key, player]) => {
+        let status = "Active", badge = "bg-green-500";
+        if (player.skip) [status, badge] = ["With Customer", "bg-yellow-500"];
+        if (!player.active) [status, badge] = ["Out of Rotation", "bg-red-500"];
+
+        const div = document.createElement("div");
+        div.className = `bg-white p-3 rounded shadow flex justify-between items-center ${reorderMode ? "draggable" : ""}`;
+        div.setAttribute("draggable", reorderMode);
+        div.dataset.name = key;
+
+        div.innerHTML = `
+          <div class="flex items-center gap-2">
+            <span class="w-4 h-4 rounded-full" style="background:${player.color}"></span>
+            <span class="font-semibold">${player.name}</span>
+            ${key === next ? `<span class="ml-2 text-sm text-blue-600 font-bold">(Up Now)</span>` : ""}
+          </div>
+          <div class="flex gap-2 action-buttons">
+            <button onclick="setStatus('${key}', 'active')" class="bg-green-500 text-white px-2 py-1 rounded text-sm">In</button>
+            <button onclick="setStatus('${key}', 'skip')" class="bg-yellow-500 text-white px-2 py-1 rounded text-sm">With Customer</button>
+            <button onclick="setStatus('${key}', 'inactive')" class="bg-gray-500 text-white px-2 py-1 rounded text-sm">Out</button>
+            <button onclick="removePlayer('${key}')" class="bg-red-500 text-white px-2 py-1 rounded text-sm">✕</button>
+          </div>
+        `;
+
+        div.addEventListener("click", () => {
+          div.classList.toggle("expanded");
+        });
+
+        playerList.appendChild(div);
+      });
+    }
+
+    window.toggleReorderMode = () => {
+      reorderMode = !reorderMode;
+      document.getElementById("reorderToggle").textContent = reorderMode ? "Finish Reordering" : "Enable Reorder Mode";
+      displayPlayers(latestSnapshot);
+    };
+
+    window.setStatus = (name, status) => {
+      const player = latestSnapshot[name];
+      if (!player) return;
+
+      const playerRef = ref(db, `rooms/${room}/players/${name}`);
+      let updates = {};
+
+      if (status === "active") {
+        updates = { active: true, skip: false, joinedAt: Date.now() };
+      } else if (status === "skip") {
+        updates = { active: true, skip: true, joinedAt: Date.now() };
+      } else {
+        updates = { active: false, skip: false };
+      }
+
+      update(playerRef, updates);
+    };
+
+    window.removePlayer = (name) => {
+      const refPath = ref(db, `rooms/${room}/players/${name}`);
+      remove(refPath);
+    };
+  </script>
+</body>
+</html>
