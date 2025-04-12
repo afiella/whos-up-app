@@ -1,12 +1,5 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-app.js";
-import {
-  getDatabase,
-  ref,
-  onValue,
-  update,
-  remove,
-  set
-} from "https://www.gstatic.com/firebasejs/11.6.0/firebase-database.js";
+import { getDatabase, ref, onValue, update, remove, set } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-database.js";
 
 const firebaseConfig = {
   apiKey: "AIzaSyDkEKUzUhc-nKFLnF1w0MOm6qwpKHTpfaI",
@@ -15,38 +8,35 @@ const firebaseConfig = {
   projectId: "who-s-up-app",
   storageBucket: "who-s-up-app.appspot.com",
   messagingSenderId: "167292375113",
-  appId: "1:167292375113:web:ce718a1aab4852fe5daf98",
+  appId: "1:167292375113:web:ce718a1aab4852fe5daf98"
 };
 
 const app = initializeApp(firebaseConfig);
 const db = getDatabase(app);
 
-let currentRoom = null;
+let currentRoom = "";
 let reorderMode = false;
 let latestSnapshot = {};
-let draggedKey = null;
-let draggingElement = null;
 
-const loginSection = document.getElementById("loginSection");
-const adminPanel = document.getElementById("adminPanel");
 const roomTitle = document.getElementById("roomTitle");
+const currentNextUp = document.getElementById("currentNextUp");
 const playerList = document.getElementById("playerList");
 const reorderToggle = document.getElementById("reorderToggle");
-const currentNextUp = document.getElementById("currentNextUp");
 
 window.checkPassword = function () {
-  const password = document.getElementById("adminPassword").value.trim().toLowerCase();
-  if (password === "bhmod") {
+  const input = document.getElementById("adminPassword").value.trim().toLowerCase();
+
+  if (input === "bhmod") {
     currentRoom = "BH";
-  } else if (password === "59mod") {
+  } else if (input === "59mod") {
     currentRoom = "59";
   } else {
-    alert("Incorrect password");
+    alert("Incorrect moderator password.");
     return;
   }
 
-  loginSection.classList.add("hidden");
-  adminPanel.classList.remove("hidden");
+  document.getElementById("loginSection").classList.add("hidden");
+  document.getElementById("adminPanel").classList.remove("hidden");
   roomTitle.textContent = `Room: ${currentRoom}`;
   reorderToggle.classList.remove("hidden");
   listenToRoom();
@@ -56,35 +46,31 @@ function listenToRoom() {
   const playersRef = ref(db, `rooms/${currentRoom}/players`);
   onValue(playersRef, (snapshot) => {
     latestSnapshot = snapshot.val() || {};
-    renderPlayers();
+    displayPlayers(latestSnapshot);
   });
 }
 
-function renderPlayers() {
-  const entries = Object.entries(latestSnapshot).sort(
-    (a, b) => a[1].joinedAt - b[1].joinedAt
-  );
-
-  const active = entries.filter(([_, p]) => p.active && !p.skip);
-  const nextUp = active[0]?.[0] || null;
-  currentNextUp.textContent = nextUp ? `Next Up: ${nextUp}` : "";
+function displayPlayers(data) {
+  const entries = Object.entries(data).sort((a, b) => a[1].joinedAt - b[1].joinedAt);
+  const activePlayers = entries.filter(([_, p]) => p.active && !p.skip);
+  const currentUp = activePlayers[0]?.[0];
+  currentNextUp.textContent = currentUp ? `Next Up: ${currentUp}` : "";
 
   playerList.innerHTML = "";
-  entries.forEach(([key, player], index) => {
-    const status = player.skip
-      ? "With Customer"
-      : !player.active
-      ? "Out of Rotation"
-      : "Active";
 
-    const badge = player.skip
-      ? "bg-yellow-500"
-      : !player.active
-      ? "bg-gray-500"
-      : "bg-green-500";
+  entries.forEach(([key, player]) => {
+    let status = "Active";
+    let badge = "bg-green-500";
+    if (player.skip) {
+      status = "With Customer";
+      badge = "bg-yellow-500";
+    } else if (!player.active) {
+      status = "Out";
+      badge = "bg-red-500";
+    }
 
     const div = document.createElement("div");
-    div.className = "bg-white rounded shadow px-4 py-3 flex flex-col gap-2 draggable";
+    div.className = "bg-white rounded shadow px-4 py-3 draggable";
     div.setAttribute("draggable", reorderMode);
     div.dataset.key = key;
 
@@ -96,13 +82,15 @@ function renderPlayers() {
         </div>
         <span class="text-sm text-white px-2 py-1 rounded ${badge}">${status}</span>
       </div>
-      <div class="action-buttons mt-2 space-y-1">
-        <div class="flex gap-2">
-          <button onclick="setPlayerStatus('${key}', 'active')" class="bg-green-600 text-white px-2 py-1 rounded text-xs w-full">In</button>
-          <button onclick="setPlayerStatus('${key}', 'skip')" class="bg-yellow-500 text-white px-2 py-1 rounded text-xs w-full">With Customer</button>
-          <button onclick="setPlayerStatus('${key}', 'inactive')" class="bg-gray-500 text-white px-2 py-1 rounded text-xs w-full">Out</button>
+      <div class="action-buttons mt-3 space-y-2">
+        <div class="flex justify-between">
+          <button onclick="setStatus('${key}', 'active')" class="bg-green-500 text-white px-2 py-1 rounded text-sm w-full mr-1">In</button>
+          <button onclick="setStatus('${key}', 'skip')" class="bg-yellow-500 text-white px-2 py-1 rounded text-sm w-full mx-1">With Customer</button>
+          <button onclick="setStatus('${key}', 'inactive')" class="bg-gray-500 text-white px-2 py-1 rounded text-sm w-full ml-1">Out</button>
         </div>
-        <button onclick="removePlayer('${key}')" class="text-red-600 text-sm font-semibold">✕ Remove</button>
+        <div class="text-center">
+          <button onclick="removePlayer('${key}')" class="text-red-600 text-sm font-bold">✕ Remove</button>
+        </div>
       </div>
     `;
 
@@ -111,14 +99,11 @@ function renderPlayers() {
     });
 
     if (reorderMode) {
-      // Mouse drag support
       div.addEventListener("dragstart", handleDragStart);
       div.addEventListener("dragover", handleDragOver);
       div.addEventListener("dragleave", handleDragLeave);
       div.addEventListener("drop", handleDrop);
       div.addEventListener("dragend", handleDragEnd);
-
-      // Touch drag support
       div.addEventListener("touchstart", handleTouchStart, { passive: true });
       div.addEventListener("touchmove", handleTouchMove, { passive: false });
       div.addEventListener("touchend", handleTouchEnd);
@@ -128,7 +113,8 @@ function renderPlayers() {
   });
 }
 
-// Mouse Events
+let draggedKey = null;
+
 function handleDragStart(e) {
   draggedKey = this.dataset.key;
   this.classList.add("dragging");
@@ -145,86 +131,80 @@ function handleDragLeave() {
 
 function handleDrop() {
   this.classList.remove("drag-over");
-  reorderBetween(draggedKey, this.dataset.key);
+  const targetKey = this.dataset.key;
+  reorderPlayers(draggedKey, targetKey);
 }
 
 function handleDragEnd() {
   this.classList.remove("dragging");
-  draggedKey = null;
 }
 
-// Touch Events
+function reorderPlayers(fromKey, toKey) {
+  if (!fromKey || !toKey || fromKey === toKey) return;
+
+  const ordered = Object.entries(latestSnapshot).sort((a, b) => a[1].joinedAt - b[1].joinedAt);
+  const fromIndex = ordered.findIndex(([k]) => k === fromKey);
+  const toIndex = ordered.findIndex(([k]) => k === toKey);
+
+  if (fromIndex === -1 || toIndex === -1) return;
+
+  const [moved] = ordered.splice(fromIndex, 1);
+  ordered.splice(toIndex, 0, moved);
+
+  const now = Date.now();
+  const updates = {};
+  ordered.forEach(([key, val], i) => {
+    updates[key] = { ...val, joinedAt: now + i };
+  });
+
+  set(ref(db, `rooms/${currentRoom}/players`), updates);
+}
+
+window.setStatus = function (key, status) {
+  const updates = status === "active"
+    ? { active: true, skip: false, joinedAt: Date.now() }
+    : status === "skip"
+    ? { active: true, skip: true, joinedAt: Date.now() }
+    : { active: false, skip: false };
+  update(ref(db, `rooms/${currentRoom}/players/${key}`), updates);
+};
+
+window.removePlayer = function (key) {
+  remove(ref(db, `rooms/${currentRoom}/players/${key}`));
+};
+
+window.toggleReorderMode = function () {
+  reorderMode = !reorderMode;
+  reorderToggle.textContent = reorderMode ? "Finish Reordering" : "Enable Reorder Mode";
+  displayPlayers(latestSnapshot);
+};
+
+// Touch fallback
+let touchStartY = null;
+let touchDraggingKey = null;
+
 function handleTouchStart(e) {
-  draggingElement = e.currentTarget;
-  draggedKey = draggingElement.dataset.key;
+  touchStartY = e.touches[0].clientY;
+  touchDraggingKey = this.dataset.key;
+  this.classList.add("dragging");
 }
 
 function handleTouchMove(e) {
   e.preventDefault();
   const touch = e.touches[0];
   const overEl = document.elementFromPoint(touch.clientX, touch.clientY);
-  if (overEl && overEl.classList.contains("draggable")) {
-    overEl.classList.add("drag-over");
+  if (overEl?.closest(".draggable")) {
+    overEl.closest(".draggable").classList.add("drag-over");
   }
 }
 
 function handleTouchEnd(e) {
   const touch = e.changedTouches[0];
-  const target = document.elementFromPoint(touch.clientX, touch.clientY);
-  if (target && target.classList.contains("draggable")) {
-    reorderBetween(draggedKey, target.dataset.key);
+  const targetEl = document.elementFromPoint(touch.clientX, touch.clientY)?.closest(".draggable");
+  if (touchDraggingKey && targetEl) {
+    reorderPlayers(touchDraggingKey, targetEl.dataset.key);
   }
-
   document.querySelectorAll(".drag-over").forEach(el => el.classList.remove("drag-over"));
-  draggingElement = null;
-  draggedKey = null;
+  document.querySelectorAll(".dragging").forEach(el => el.classList.remove("dragging"));
+  touchDraggingKey = null;
 }
-
-// Reorder Logic
-function reorderBetween(sourceKey, targetKey) {
-  if (!sourceKey || !targetKey || sourceKey === targetKey) return;
-
-  const ordered = Object.entries(latestSnapshot).sort(
-    (a, b) => a[1].joinedAt - b[1].joinedAt
-  );
-
-  const fromIndex = ordered.findIndex(([k]) => k === sourceKey);
-  const toIndex = ordered.findIndex(([k]) => k === targetKey);
-
-  if (fromIndex === -1 || toIndex === -1) return;
-
-  const updated = [...ordered];
-  const [moved] = updated.splice(fromIndex, 1);
-  updated.splice(toIndex, 0, moved);
-
-  const now = Date.now();
-  const updates = {};
-  updated.forEach(([key, val], i) => {
-    updates[key] = { ...val, joinedAt: now + i };
-  });
-
-  const playersRef = ref(db, `rooms/${currentRoom}/players`);
-  set(playersRef, updates);
-}
-
-window.setPlayerStatus = function (key, status) {
-  const playerRef = ref(db, `rooms/${currentRoom}/players/${key}`);
-  const updates =
-    status === "active"
-      ? { active: true, skip: false, joinedAt: Date.now() }
-      : status === "skip"
-      ? { active: true, skip: true, joinedAt: Date.now() }
-      : { active: false, skip: false };
-  update(playerRef, updates);
-};
-
-window.removePlayer = function (key) {
-  const playerRef = ref(db, `rooms/${currentRoom}/players/${key}`);
-  remove(playerRef);
-};
-
-window.toggleReorderMode = function () {
-  reorderMode = !reorderMode;
-  reorderToggle.textContent = reorderMode ? "Finish Reordering" : "Enable Reorder Mode";
-  renderPlayers();
-};
