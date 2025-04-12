@@ -11,7 +11,6 @@ const firebaseConfig = {
 firebase.initializeApp(firebaseConfig);
 const db = firebase.database();
 
-// Default fallback based on URL
 let currentRoom = window.location.pathname.includes("bh") ? "BH" : "59";
 let currentUser = null;
 
@@ -62,8 +61,16 @@ function renderNameButtons() {
 function attemptJoin(name, color) {
   const userRef = db.ref(`rooms/${currentRoom}/players/${name}`);
   userRef.once("value", (snapshot) => {
-    if (snapshot.exists()) {
-      if (takenModal) takenModal.classList.remove("hidden");
+    const existing = snapshot.val();
+    const saved = JSON.parse(localStorage.getItem("currentUser") || "{}");
+
+    if (existing) {
+      // Allow rejoin if saved data matches
+      if (saved?.name === name && saved?.room === currentRoom && saved?.color === color) {
+        joinWithName(name, color);
+      } else {
+        if (takenModal) takenModal.classList.remove("hidden");
+      }
     } else {
       joinWithName(name, color);
     }
@@ -155,12 +162,12 @@ function leaveGame() {
 
 renderNameButtons();
 
-// Auto rejoin if user already exists
+// Auto rejoin
 window.addEventListener("load", () => {
   const savedUser = JSON.parse(localStorage.getItem("currentUser"));
   if (savedUser && savedUser.name && savedUser.color && savedUser.room) {
     currentUser = savedUser;
-    currentRoom = savedUser.room; // <-- Set current room from saved data
+    currentRoom = savedUser.room;
     nameSelectSection.classList.add("hidden");
     mainScreen.classList.remove("hidden");
     joinedMessage.textContent = `Welcome back, ${currentUser.name}!`;
