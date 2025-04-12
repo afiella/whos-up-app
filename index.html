@@ -96,5 +96,19 @@
     });
   }
 </script>
+  <script>
+  // Rejoin logic
+  window.addEventListener("DOMContentLoaded", () => {
+    const stored = JSON.parse(localStorage.getItem("currentUser") || "{}");
+    const path = window.location.pathname;
+    
+    if (stored?.name && !path.includes("bh") && !path.includes("59")) {
+      const room = stored.room || (stored && stored.name && stored.color && window.confirm(`Rejoin ${stored.name} in your last room?`) ? (stored.roomHint || "BH") : null);
+      if (room === "BH" || room === "59") {
+        window.location.href = `${room.toLowerCase()}.html`;
+      }
+    }
+  });
+</script>
 </body>
 </html>
