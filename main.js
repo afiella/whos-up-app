@@ -11,7 +11,6 @@ const firebaseConfig = {
 firebase.initializeApp(firebaseConfig);
 const db = firebase.database();
 
-// ✅ Detect room from <body data-room="...">
 let currentRoom = document.body.dataset.room || "BH";
 let currentUser = null;
 
@@ -92,19 +91,24 @@ function joinWithName(name, color) {
 
 function updateDisplay(playersMap) {
   const allPlayers = Object.values(playersMap || {});
-  const activePlayers = allPlayers
-    .filter(p => p.active && !p.skip)
-    .sort((a, b) => a.joinedAt - b.joinedAt);
+  const activePlayers = allPlayers.filter(p => p.active && !p.skip).sort((a, b) => a.joinedAt - b.joinedAt);
+  const next = activePlayers[0];
 
-  queueDisplay.innerHTML = "";
+  nextUpDiv.innerHTML = next
+    ? `<div class="font-bold">Next: <span style="color:${next.color}">${next.name}</span></div>`
+    : "No one";
 
-  allPlayers.forEach(p => {
+  // Create a new animated queue
+  const newQueue = document.createElement("div");
+  newQueue.id = "queue";
+  newQueue.className = "space-y-1 mb-6";
+
+  allPlayers.sort((a, b) => a.joinedAt - b.joinedAt).forEach(p => {
     let badgeColor = "bg-green-600", status = "Active";
     if (p.skip) {
       badgeColor = "bg-yellow-500";
       status = "With Customer";
-    }
-    if (!p.active) {
+    } else if (!p.active) {
       badgeColor = "bg-red-500";
       status = "Out of Rotation";
     }
@@ -118,7 +122,7 @@ function updateDisplay(playersMap) {
       </div>
       <span class="text-xs text-white px-2 py-1 rounded ${badgeColor}">${status}</span>
     `;
-    queueDisplay.appendChild(div);
+    newQueue.appendChild(div);
 
     requestAnimationFrame(() => {
       div.classList.remove("player-enter");
@@ -126,10 +130,13 @@ function updateDisplay(playersMap) {
     });
   });
 
-  const next = activePlayers[0];
-  nextUpDiv.innerHTML = next
-    ? `<div class="font-bold">Next: <span style="color:${next.color}">${next.name}</span></div>`
-    : "No one";
+  // Replace the current queue visually
+  const oldQueue = document.getElementById("queue");
+  if (oldQueue) {
+    oldQueue.replaceWith(newQueue);
+  } else {
+    queueDisplay.appendChild(newQueue);
+  }
 }
 
 function setStatus(type) {
