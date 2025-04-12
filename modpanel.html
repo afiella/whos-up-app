@@ -27,6 +27,15 @@
       background-color: #eff6ff;
       transition: background-color 0.2s ease;
     }
+
+    .ghost-clone {
+      position: absolute;
+      z-index: 9999;
+      pointer-events: none;
+      opacity: 0.6;
+      transform: scale(0.95);
+      transition: transform 0.2s ease;
+    }
   </style>
 </head>
 <body class="bg-gray-100 min-h-screen flex items-center justify-center px-4">
