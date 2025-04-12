@@ -5,7 +5,6 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Who's Up App</title>
   <link rel="icon" type="image/png" href="header.jpeg" />
-  <!-- Manifest and Theme Color for PWA -->
   <link rel="manifest" href="/manifest.json" />
   <meta name="theme-color" content="#2f4156" />
   <script src="https://cdn.tailwindcss.com"></script>
@@ -15,22 +14,16 @@
       opacity: 0;
       transition: opacity 0.5s ease;
     }
-
     .fade-in {
       opacity: 0;
       animation: fadeIn 0.6s ease forwards;
     }
-
     @keyframes fadeIn {
-      to {
-        opacity: 1;
-      }
+      to { opacity: 1; }
     }
-
     .transition-link {
       transition: transform 0.2s ease, background-color 0.3s ease;
     }
-
     .transition-link:hover {
       transform: scale(1.05);
     }
@@ -38,7 +31,7 @@
 </head>
 <body class="bg-[#fdfcf7] min-h-screen flex items-center justify-center px-4">
 
-  <!-- Lottie Loading Screen -->
+  <!-- Loading Animation -->
   <div id="loadingScreen" class="hidden fixed inset-0 bg-white flex flex-col items-center justify-center z-50">
     <dotlottie-player
       src="https://lottie.host/926f3f69-99ed-4086-a29a-f364e02fba97/fwd3Sw5Enn.lottie"
@@ -53,28 +46,25 @@
     <p class="text-gray-700 text-sm mt-4">Loading room...</p>
   </div>
 
-  <!-- Main Page -->
+  <!-- Main Interface -->
   <div id="mainPage" class="fade-in bg-white p-6 rounded-xl shadow-2xl text-center space-y-6 w-full max-w-md">
     <img src="header.jpeg" alt="Who's Up Logo" class="w-64 mx-auto mb-4 rounded-lg shadow-md" />
-
     <div class="space-y-5">
       <a href="bh.html" class="transition-link block bg-blue-600 text-white py-3 rounded-lg hover:bg-blue-700 font-semibold">Join BH</a>
       <a href="59.html" class="transition-link block bg-purple-600 text-white py-3 rounded-lg hover:bg-purple-700 font-semibold">Join 59</a>
       <a href="admin.html" class="transition-link block bg-gray-700 text-white py-3 rounded-lg hover:bg-gray-800 font-semibold">Admin</a>
-      <a href="modpanel.html" class="transition-link block bg-orange-500 text-white py-2 rounded hover:bg-orange-600 transition">Moderator</a>
+      <a href="modpanel.html" class="transition-link block bg-orange-500 text-white py-2 rounded hover:bg-orange-600 font-semibold">Moderator</a>
     </div>
   </div>
 
-  <!-- Transition JS -->
+  <!-- Page Fade Transition -->
   <script>
     document.querySelectorAll(".transition-link").forEach(link => {
       link.addEventListener("click", function (e) {
         e.preventDefault();
         const targetUrl = this.getAttribute("href");
-
         document.getElementById("loadingScreen").classList.remove("hidden");
         document.getElementById("mainPage").classList.add("fade-out");
-
         setTimeout(() => {
           window.location.href = targetUrl;
         }, 3000);
@@ -87,18 +77,14 @@
     if ("serviceWorker" in navigator) {
       window.addEventListener("load", function () {
         navigator.serviceWorker.register("/service-worker.js").then(
-          function (registration) {
-            console.log("ServiceWorker registered with scope:", registration.scope);
-          },
-          function (err) {
-            console.log("ServiceWorker registration failed:", err);
-          }
+          reg => console.log("ServiceWorker registered:", reg.scope),
+          err => console.log("ServiceWorker registration failed:", err)
         );
       });
     }
   </script>
 
-  <!-- Rejoin if still in game -->
+  <!-- Auto Redirect to Room if Player is Still Active -->
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-app.js";
     import { getDatabase, ref, get } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-database.js";
@@ -119,10 +105,11 @@
     const stored = JSON.parse(localStorage.getItem("currentUser") || "{}");
 
     if (stored?.name && stored?.room) {
-      const playerRef = ref(db, `rooms/${stored.room}/players/${stored.name}`);
-      get(playerRef).then(snapshot => {
+      const refPath = ref(db, `rooms/${stored.room}/players/${stored.name}`);
+      get(refPath).then(snapshot => {
         if (snapshot.exists()) {
-          window.location.href = stored.room.toLowerCase() + ".html";
+          // Automatically redirect to room if player is still present
+          window.location.href = `${stored.room.toLowerCase()}.html`;
         } else {
           localStorage.removeItem("currentUser");
         }
