@@ -73,6 +73,7 @@ function displayPlayers(data) {
     div.className = "bg-white rounded shadow px-4 py-3 draggable";
     div.setAttribute("draggable", reorderMode);
     div.dataset.key = key;
+    div.dataset.name = key;
 
     div.innerHTML = `
       <div class="flex items-center justify-between cursor-pointer player-header">
@@ -99,11 +100,16 @@ function displayPlayers(data) {
     });
 
     if (reorderMode) {
+      div.classList.add("border", "border-blue-400");
+
+      // Mouse support
       div.addEventListener("dragstart", handleDragStart);
       div.addEventListener("dragover", handleDragOver);
       div.addEventListener("dragleave", handleDragLeave);
       div.addEventListener("drop", handleDrop);
       div.addEventListener("dragend", handleDragEnd);
+
+      // Touch support
       div.addEventListener("touchstart", handleTouchStart, { passive: true });
       div.addEventListener("touchmove", handleTouchMove, { passive: false });
       div.addEventListener("touchend", handleTouchEnd);
@@ -180,11 +186,9 @@ window.toggleReorderMode = function () {
 };
 
 // Touch fallback
-let touchStartY = null;
 let touchDraggingKey = null;
 
 function handleTouchStart(e) {
-  touchStartY = e.touches[0].clientY;
   touchDraggingKey = this.dataset.key;
   this.classList.add("dragging");
 }
