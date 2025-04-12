@@ -11,11 +11,12 @@ const firebaseConfig = {
 firebase.initializeApp(firebaseConfig);
 const db = firebase.database();
 
-const nameList = ["Archie", "Ella", "Veronica", "Dan", "Alex", "Adam", "Darryl", "Michael", "Tia", "Rob", "Jeremy", "Nassir", "Greg"];
-const colorList = ["#2f4156", "#567c8d", "#c8d9e6", "#f5efeb", "#8c5a7f", "#adb3bc", "#4697df", "#d195b2", "#f9cb9c", "#88afb7", "#bdcccf", "#ede1bc"];
-
+// Default fallback based on URL
 let currentRoom = window.location.pathname.includes("bh") ? "BH" : "59";
 let currentUser = null;
+
+const nameList = ["Archie", "Ella", "Veronica", "Dan", "Alex", "Adam", "Darryl", "Michael", "Tia", "Rob", "Jeremy", "Nassir", "Greg"];
+const colorList = ["#2f4156", "#567c8d", "#c8d9e6", "#f5efeb", "#8c5a7f", "#adb3bc", "#4697df", "#d195b2", "#f9cb9c", "#88afb7", "#bdcccf", "#ede1bc"];
 
 const nameButtonsContainer = document.getElementById("nameButtons");
 const nameSelectSection = document.getElementById("nameSelect");
@@ -37,7 +38,6 @@ function renderNameButtons() {
     nameButtonsContainer.appendChild(btn);
   });
 
-  // Check for taken names across all rooms
   db.ref("rooms").on("value", (snapshot) => {
     const allRooms = snapshot.val() || {};
     const takenNames = new Set();
@@ -76,12 +76,11 @@ function closeModal() {
 
 function joinWithName(name, color) {
   const joinedAt = Date.now();
-  currentUser = { name, color, active: true, skip: false, joinedAt };
+  currentUser = { name, color, active: true, skip: false, joinedAt, room: currentRoom };
+
   db.ref(`rooms/${currentRoom}/players/${name}`).set(currentUser);
-  localStorage.setItem("currentUser", JSON.stringify({
-  ...currentUser,
-  room: currentRoom
-}));
+  localStorage.setItem("currentUser", JSON.stringify(currentUser));
+
   nameSelectSection.classList.add("hidden");
   mainScreen.classList.remove("hidden");
   joinedMessage.textContent = `Welcome, ${name}!`;
@@ -155,10 +154,13 @@ function leaveGame() {
 }
 
 renderNameButtons();
+
+// Auto rejoin if user already exists
 window.addEventListener("load", () => {
   const savedUser = JSON.parse(localStorage.getItem("currentUser"));
-  if (savedUser && savedUser.name && savedUser.color) {
+  if (savedUser && savedUser.name && savedUser.color && savedUser.room) {
     currentUser = savedUser;
+    currentRoom = savedUser.room; // <-- Set current room from saved data
     nameSelectSection.classList.add("hidden");
     mainScreen.classList.remove("hidden");
     joinedMessage.textContent = `Welcome back, ${currentUser.name}!`;
