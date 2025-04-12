@@ -70,10 +70,9 @@ function displayPlayers(data) {
     }
 
     const div = document.createElement("div");
-    div.className = "bg-white rounded shadow px-4 py-3 draggable";
+    div.className = "bg-white rounded shadow px-4 py-3 draggable transition-all";
     div.setAttribute("draggable", reorderMode);
     div.dataset.key = key;
-    div.dataset.name = key;
 
     div.innerHTML = `
       <div class="flex items-center justify-between cursor-pointer player-header">
@@ -100,16 +99,12 @@ function displayPlayers(data) {
     });
 
     if (reorderMode) {
-      div.classList.add("border", "border-blue-400");
-
-      // Mouse support
       div.addEventListener("dragstart", handleDragStart);
       div.addEventListener("dragover", handleDragOver);
       div.addEventListener("dragleave", handleDragLeave);
       div.addEventListener("drop", handleDrop);
       div.addEventListener("dragend", handleDragEnd);
 
-      // Touch support
       div.addEventListener("touchstart", handleTouchStart, { passive: true });
       div.addEventListener("touchmove", handleTouchMove, { passive: false });
       div.addEventListener("touchend", handleTouchEnd);
@@ -120,6 +115,7 @@ function displayPlayers(data) {
 }
 
 let draggedKey = null;
+let ghost = null;
 
 function handleDragStart(e) {
   draggedKey = this.dataset.key;
@@ -185,30 +181,56 @@ window.toggleReorderMode = function () {
   displayPlayers(latestSnapshot);
 };
 
-// Touch fallback
+// Touch Support
 let touchDraggingKey = null;
 
 function handleTouchStart(e) {
   touchDraggingKey = this.dataset.key;
   this.classList.add("dragging");
+
+  ghost = this.cloneNode(true);
+  ghost.style.position = "absolute";
+  ghost.style.top = `${e.touches[0].clientY}px`;
+  ghost.style.left = `${e.touches[0].clientX}px`;
+  ghost.style.zIndex = 9999;
+  ghost.style.pointerEvents = "none";
+  ghost.style.width = `${this.offsetWidth}px`;
+  ghost.classList.add("opacity-50", "scale-95");
+
+  document.body.appendChild(ghost);
 }
 
 function handleTouchMove(e) {
   e.preventDefault();
   const touch = e.touches[0];
-  const overEl = document.elementFromPoint(touch.clientX, touch.clientY);
-  if (overEl?.closest(".draggable")) {
-    overEl.closest(".draggable").classList.add("drag-over");
+  ghost.style.top = `${touch.clientY - 30}px`;
+  ghost.style.left = `${touch.clientX - 100}px`;
+
+  document.querySelectorAll(".draggable").forEach((el) => {
+    el.classList.remove("drag-over");
+  });
+
+  const over = document.elementFromPoint(touch.clientX, touch.clientY)?.closest(".draggable");
+  if (over) {
+    over.classList.add("drag-over");
   }
 }
 
 function handleTouchEnd(e) {
   const touch = e.changedTouches[0];
-  const targetEl = document.elementFromPoint(touch.clientX, touch.clientY)?.closest(".draggable");
-  if (touchDraggingKey && targetEl) {
-    reorderPlayers(touchDraggingKey, targetEl.dataset.key);
+  const dropTarget = document.elementFromPoint(touch.clientX, touch.clientY)?.closest(".draggable");
+
+  if (touchDraggingKey && dropTarget) {
+    reorderPlayers(touchDraggingKey, dropTarget.dataset.key);
   }
+
   document.querySelectorAll(".drag-over").forEach(el => el.classList.remove("drag-over"));
   document.querySelectorAll(".dragging").forEach(el => el.classList.remove("dragging"));
+
+  if (ghost) {
+    ghost.remove();
+    ghost = null;
+  }
+
   touchDraggingKey = null;
 }
