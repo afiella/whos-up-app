@@ -5,13 +5,16 @@ const firebaseConfig = {
   projectId: "who-s-up-app",
   storageBucket: "who-s-up-app.appspot.com",
   messagingSenderId: "167292375113",
-  appId: "1:167292375113:web:ce718a1aab4852fe5daf98",
+  appId: "1:167292375113:web:ce718a1aab4852fe5daf98"
 };
 
 firebase.initializeApp(firebaseConfig);
 const db = firebase.database();
 
-let currentRoom = window.location.pathname.includes("bh") ? "BH" : "59";
+// ✅ Detect current room from path or stored override
+let currentRoom = localStorage.getItem("roomOverride") ||
+  (window.location.pathname.includes("bh") ? "BH" : "59");
+
 let currentUser = null;
 
 const nameList = ["Archie", "Ella", "Veronica", "Dan", "Alex", "Adam", "Darryl", "Michael", "Tia", "Rob", "Jeremy", "Nassir", "Greg"];
@@ -25,6 +28,7 @@ const joinedMessage = document.getElementById("joinedMessage");
 const nextUpDiv = document.getElementById("nextUp");
 const takenModal = document.getElementById("takenModal");
 
+// ✅ Render available name buttons
 function renderNameButtons() {
   nameButtonsContainer.innerHTML = "";
   nameList.forEach((name, index) => {
@@ -37,6 +41,7 @@ function renderNameButtons() {
     nameButtonsContainer.appendChild(btn);
   });
 
+  // 🔄 Listen for taken names across rooms
   db.ref("rooms").on("value", (snapshot) => {
     const allRooms = snapshot.val() || {};
     const takenNames = new Set();
@@ -58,19 +63,12 @@ function renderNameButtons() {
   });
 }
 
+// ✅ Try to join name
 function attemptJoin(name, color) {
   const userRef = db.ref(`rooms/${currentRoom}/players/${name}`);
   userRef.once("value", (snapshot) => {
-    const existing = snapshot.val();
-    const saved = JSON.parse(localStorage.getItem("currentUser") || "{}");
-
-    if (existing) {
-      // Allow rejoin if saved data matches
-      if (saved?.name === name && saved?.room === currentRoom && saved?.color === color) {
-        joinWithName(name, color);
-      } else {
-        if (takenModal) takenModal.classList.remove("hidden");
-      }
+    if (snapshot.exists()) {
+      if (takenModal) takenModal.classList.remove("hidden");
     } else {
       joinWithName(name, color);
     }
@@ -81,12 +79,14 @@ function closeModal() {
   if (takenModal) takenModal.classList.add("hidden");
 }
 
+// ✅ Join with chosen name and color
 function joinWithName(name, color) {
   const joinedAt = Date.now();
   currentUser = { name, color, active: true, skip: false, joinedAt, room: currentRoom };
 
   db.ref(`rooms/${currentRoom}/players/${name}`).set(currentUser);
   localStorage.setItem("currentUser", JSON.stringify(currentUser));
+  localStorage.setItem("roomOverride", currentRoom); // Save current room
 
   nameSelectSection.classList.add("hidden");
   mainScreen.classList.remove("hidden");
@@ -97,6 +97,7 @@ function joinWithName(name, color) {
   });
 }
 
+// ✅ Display queue
 function updateDisplay(playersMap) {
   const allPlayers = Object.values(playersMap || {});
   const activePlayers = allPlayers
@@ -139,6 +140,7 @@ function updateDisplay(playersMap) {
     : "No one";
 }
 
+// ✅ Update player status
 function setStatus(type) {
   if (!currentUser) return;
   const userRef = db.ref(`rooms/${currentRoom}/players/${currentUser.name}`);
@@ -153,26 +155,28 @@ function setStatus(type) {
   }
 }
 
+// ✅ Leave game
 function leaveGame() {
   if (!currentUser) return;
   db.ref(`rooms/${currentRoom}/players/${currentUser.name}`).remove();
   localStorage.removeItem("currentUser");
+  localStorage.removeItem("roomOverride");
   window.location.href = "index.html";
 }
 
-renderNameButtons();
-
-// Auto rejoin
+// ✅ Auto rejoin on load
 window.addEventListener("load", () => {
   const savedUser = JSON.parse(localStorage.getItem("currentUser"));
   if (savedUser && savedUser.name && savedUser.color && savedUser.room) {
     currentUser = savedUser;
     currentRoom = savedUser.room;
+
     nameSelectSection.classList.add("hidden");
     mainScreen.classList.remove("hidden");
     joinedMessage.textContent = `Welcome back, ${currentUser.name}!`;
 
-    db.ref(`rooms/${currentRoom}/players/${currentUser.name}`).once("value", (snapshot) => {
+    const userRef = db.ref(`rooms/${currentRoom}/players/${currentUser.name}`);
+    userRef.once("value", (snapshot) => {
       if (!snapshot.exists()) {
         db.ref(`rooms/${currentRoom}/players/${currentUser.name}`).set(currentUser);
       }
@@ -183,3 +187,5 @@ window.addEventListener("load", () => {
     });
   }
 });
+
+renderNameButtons();
