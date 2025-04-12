@@ -24,6 +24,8 @@ const db = getDatabase(app);
 let currentRoom = null;
 let reorderMode = false;
 let latestSnapshot = {};
+let draggedKey = null;
+let draggingElement = null;
 
 const loginSection = document.getElementById("loginSection");
 const adminPanel = document.getElementById("adminPanel");
@@ -82,8 +84,7 @@ function renderPlayers() {
       : "bg-green-500";
 
     const div = document.createElement("div");
-    div.className =
-      "bg-white rounded shadow px-4 py-3 flex flex-col gap-2 draggable";
+    div.className = "bg-white rounded shadow px-4 py-3 flex flex-col gap-2 draggable";
     div.setAttribute("draggable", reorderMode);
     div.dataset.key = key;
 
@@ -105,26 +106,29 @@ function renderPlayers() {
       </div>
     `;
 
-    // Toggle buttons on tap
     div.querySelector(".player-header").addEventListener("click", () => {
       div.classList.toggle("expanded");
     });
 
-    // Drag events
     if (reorderMode) {
+      // Mouse drag support
       div.addEventListener("dragstart", handleDragStart);
       div.addEventListener("dragover", handleDragOver);
       div.addEventListener("dragleave", handleDragLeave);
       div.addEventListener("drop", handleDrop);
       div.addEventListener("dragend", handleDragEnd);
+
+      // Touch drag support
+      div.addEventListener("touchstart", handleTouchStart, { passive: true });
+      div.addEventListener("touchmove", handleTouchMove, { passive: false });
+      div.addEventListener("touchend", handleTouchEnd);
     }
 
     playerList.appendChild(div);
   });
 }
 
-let draggedKey = null;
-
+// Mouse Events
 function handleDragStart(e) {
   draggedKey = this.dataset.key;
   this.classList.add("dragging");
@@ -141,22 +145,57 @@ function handleDragLeave() {
 
 function handleDrop() {
   this.classList.remove("drag-over");
-  const targetKey = this.dataset.key;
+  reorderBetween(draggedKey, this.dataset.key);
+}
 
-  if (!draggedKey || draggedKey === targetKey) return;
+function handleDragEnd() {
+  this.classList.remove("dragging");
+  draggedKey = null;
+}
+
+// Touch Events
+function handleTouchStart(e) {
+  draggingElement = e.currentTarget;
+  draggedKey = draggingElement.dataset.key;
+}
+
+function handleTouchMove(e) {
+  e.preventDefault();
+  const touch = e.touches[0];
+  const overEl = document.elementFromPoint(touch.clientX, touch.clientY);
+  if (overEl && overEl.classList.contains("draggable")) {
+    overEl.classList.add("drag-over");
+  }
+}
+
+function handleTouchEnd(e) {
+  const touch = e.changedTouches[0];
+  const target = document.elementFromPoint(touch.clientX, touch.clientY);
+  if (target && target.classList.contains("draggable")) {
+    reorderBetween(draggedKey, target.dataset.key);
+  }
+
+  document.querySelectorAll(".drag-over").forEach(el => el.classList.remove("drag-over"));
+  draggingElement = null;
+  draggedKey = null;
+}
+
+// Reorder Logic
+function reorderBetween(sourceKey, targetKey) {
+  if (!sourceKey || !targetKey || sourceKey === targetKey) return;
 
   const ordered = Object.entries(latestSnapshot).sort(
     (a, b) => a[1].joinedAt - b[1].joinedAt
   );
 
-  const draggedIndex = ordered.findIndex(([k]) => k === draggedKey);
-  const targetIndex = ordered.findIndex(([k]) => k === targetKey);
+  const fromIndex = ordered.findIndex(([k]) => k === sourceKey);
+  const toIndex = ordered.findIndex(([k]) => k === targetKey);
 
-  if (draggedIndex === -1 || targetIndex === -1) return;
+  if (fromIndex === -1 || toIndex === -1) return;
 
   const updated = [...ordered];
-  const [moved] = updated.splice(draggedIndex, 1);
-  updated.splice(targetIndex, 0, moved);
+  const [moved] = updated.splice(fromIndex, 1);
+  updated.splice(toIndex, 0, moved);
 
   const now = Date.now();
   const updates = {};
@@ -166,11 +205,6 @@ function handleDrop() {
 
   const playersRef = ref(db, `rooms/${currentRoom}/players`);
   set(playersRef, updates);
-  draggedKey = null;
-}
-
-function handleDragEnd() {
-  this.classList.remove("dragging");
 }
 
 window.setPlayerStatus = function (key, status) {
