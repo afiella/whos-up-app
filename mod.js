@@ -1,18 +1,193 @@
-// This script handles moderator login for BH or 59 rooms.
-// It checks the password and redirects to the correct room panel.
+import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-app.js";
+import {
+  getDatabase,
+  ref,
+  onValue,
+  update,
+  remove,
+  set
+} from "https://www.gstatic.com/firebasejs/11.6.0/firebase-database.js";
 
-document.getElementById("modLoginBtn").addEventListener("click", () => {
-  const password = document.getElementById("modPassword").value.trim();
+const firebaseConfig = {
+  apiKey: "AIzaSyDkEKUzUhc-nKFLnF1w0MOm6qwpKHTpfaI",
+  authDomain: "who-s-up-app.firebaseapp.com",
+  databaseURL: "https://who-s-up-app-default-rtdb.firebaseio.com",
+  projectId: "who-s-up-app",
+  storageBucket: "who-s-up-app.appspot.com",
+  messagingSenderId: "167292375113",
+  appId: "1:167292375113:web:ce718a1aab4852fe5daf98",
+};
 
-  const roomPasswords = {
-    bhmod: "bhpanel.html",
-    "59mod": "59panel.html",
-  };
+const app = initializeApp(firebaseConfig);
+const db = getDatabase(app);
 
-  const redirectPage = roomPasswords[password.toLowerCase()];
-  if (redirectPage) {
-    window.location.href = redirectPage;
+let currentRoom = null;
+let reorderMode = false;
+let latestSnapshot = {};
+
+const roomTitle = document.getElementById("roomTitle");
+const playerList = document.getElementById("playerList");
+const currentNextUp = document.getElementById("currentNextUp");
+const reorderBtn = document.getElementById("reorderToggle");
+
+window.checkPassword = function () {
+  const input = document.getElementById("adminPassword").value.trim();
+  if (input === "bhmod") {
+    currentRoom = "BH";
+  } else if (input === "59mod") {
+    currentRoom = "59";
   } else {
-    alert("Incorrect moderator password.");
+    alert("Incorrect moderator password");
+    return;
   }
-});
+
+  document.getElementById("loginSection").classList.add("hidden");
+  document.getElementById("adminPanel").classList.remove("hidden");
+  roomTitle.textContent = `Room: ${currentRoom}`;
+  loadRoom(currentRoom);
+};
+
+function loadRoom(room) {
+  const playersRef = ref(db, `rooms/${room}/players`);
+  onValue(playersRef, (snapshot) => {
+    latestSnapshot = snapshot.val() || {};
+    displayPlayers(latestSnapshot);
+  });
+}
+
+function displayPlayers(data) {
+  const players = Object.entries(data).sort(
+    (a, b) => a[1].joinedAt - b[1].joinedAt
+  );
+  const activePlayers = players.filter(([_, p]) => p.active && !p.skip);
+  const currentNext = activePlayers[0]?.[0];
+
+  currentNextUp.textContent = currentNext ? `Up Now: ${currentNext}` : "";
+
+  playerList.innerHTML = "";
+  players.forEach(([key, player]) => {
+    let status = "Active";
+    let badgeColor = "bg-green-500";
+    if (!player.active) {
+      status = "Out";
+      badgeColor = "bg-red-500";
+    } else if (player.skip) {
+      status = "With Customer";
+      badgeColor = "bg-yellow-500";
+    }
+
+    const div = document.createElement("div");
+    div.className = "flex justify-between items-center bg-white p-3 rounded shadow";
+    div.setAttribute("draggable", reorderMode);
+    div.dataset.name = key;
+
+    div.innerHTML = `
+      <div class="flex items-center gap-3">
+        <div class="w-8 h-8 rounded-full" style="background:${player.color}"></div>
+        <span class="font-semibold">${player.name}</span>
+        <span class="text-xs px-2 py-1 rounded text-white ${badgeColor}">${status}</span>
+        ${
+          key === currentNext
+            ? '<span class="ml-2 text-sm text-blue-600 font-bold">(Up Now)</span>'
+            : ""
+        }
+      </div>
+      <div class="flex gap-2 action-buttons ${reorderMode ? 'hidden' : ''}">
+        <button onclick="setStatus('${key}', 'active')" class="bg-green-500 text-white px-2 py-1 rounded text-sm">In</button>
+        <button onclick="setStatus('${key}', 'skip')" class="bg-yellow-500 text-white px-2 py-1 rounded text-sm">With Customer</button>
+        <button onclick="setStatus('${key}', 'inactive')" class="bg-gray-500 text-white px-2 py-1 rounded text-sm">Out</button>
+        <button onclick="removePlayer('${key}')" class="bg-red-500 text-white px-2 py-1 rounded text-sm">✕</button>
+      </div>
+    `;
+
+    if (reorderMode) {
+      div.addEventListener("dragstart", handleDragStart);
+      div.addEventListener("dragover", handleDragOver);
+      div.addEventListener("dragleave", handleDragLeave);
+      div.addEventListener("drop", handleDrop);
+    }
+
+    playerList.appendChild(div);
+  });
+}
+
+let dragged = null;
+
+function handleDragStart(e) {
+  dragged = e.currentTarget;
+  e.currentTarget.classList.add("dragging");
+}
+
+function handleDragOver(e) {
+  e.preventDefault();
+  const target = e.currentTarget;
+  if (target !== dragged) {
+    target.classList.add("drag-over");
+  }
+}
+
+function handleDragLeave(e) {
+  e.currentTarget.classList.remove("drag-over");
+}
+
+function handleDrop(e) {
+  e.preventDefault();
+  const target = e.currentTarget;
+  if (dragged && target !== dragged) {
+    const nameA = dragged.dataset.name;
+    const nameB = target.dataset.name;
+
+    const playersArray = Object.entries(latestSnapshot).sort(
+      (a, b) => a[1].joinedAt - b[1].joinedAt
+    );
+
+    const indexA = playersArray.findIndex(([k]) => k === nameA);
+    const indexB = playersArray.findIndex(([k]) => k === nameB);
+
+    if (indexA > -1 && indexB > -1) {
+      const temp = playersArray[indexA][1].joinedAt;
+      playersArray[indexA][1].joinedAt = playersArray[indexB][1].joinedAt;
+      playersArray[indexB][1].joinedAt = temp;
+
+      const updates = {};
+      playersArray.forEach(([k, v]) => {
+        updates[k] = v;
+      });
+
+      const roomRef = ref(db, `rooms/${currentRoom}/players`);
+      set(roomRef, updates);
+    }
+  }
+
+  dragged.classList.remove("dragging");
+  e.currentTarget.classList.remove("drag-over");
+  dragged = null;
+}
+
+window.setStatus = function (name, status) {
+  const player = latestSnapshot[name];
+  if (!player) return;
+
+  let updates = {};
+  if (status === "active") {
+    updates = { active: true, skip: false, joinedAt: Date.now() };
+  } else if (status === "skip") {
+    updates = { active: true, skip: true, joinedAt: Date.now() };
+  } else {
+    updates = { active: false, skip: false };
+  }
+
+  const playerRef = ref(db, `rooms/${currentRoom}/players/${name}`);
+  update(playerRef, updates);
+};
+
+window.removePlayer = function (name) {
+  const playerRef = ref(db, `rooms/${currentRoom}/players/${name}`);
+  remove(playerRef);
+};
+
+window.toggleReorderMode = function () {
+  reorderMode = !reorderMode;
+  reorderBtn.textContent = reorderMode ? "Finish Reordering" : "Enable Reorder Mode";
+  displayPlayers(latestSnapshot);
+};
