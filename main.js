@@ -91,50 +91,39 @@ function joinWithName(name, color) {
 
 function updateDisplay(playersMap) {
   const allPlayers = Object.values(playersMap || {});
-  const activePlayers = allPlayers.filter(p => p.active && !p.skip).sort((a, b) => a.joinedAt - b.joinedAt);
-  const sortedPlayers = allPlayers.sort((a, b) => a.joinedAt - b.joinedAt);
-  const next = activePlayers[0];
+  const activeQueue = allPlayers.filter(p => p.active && !p.skip).sort((a, b) => a.joinedAt - b.joinedAt);
+  const next = activeQueue[0];
 
+  // Floating banner for next up
   nextUpDiv.innerHTML = next
-    ? `<div class="font-bold">Next: <span style="color:${next.color}">${next.name}</span></div>`
+    ? `<div class="font-bold bg-blue-100 px-3 py-1 rounded inline-block shadow-sm">Next: <span style="color:${next.color}">${next.name}</span></div>`
     : "No one";
 
-  // FLIP animation: Capture first positions
+  // Capture previous positions for FLIP
   const oldPositions = {};
   document.querySelectorAll(".player").forEach(el => {
     oldPositions[el.dataset.name] = el.getBoundingClientRect();
   });
 
-  // Clear queue display
   queueDisplay.innerHTML = "";
 
-  // Rebuild with updated order
-  sortedPlayers.forEach(p => {
-    let badgeColor = "bg-green-600", status = "Active";
-    if (p.skip) {
-      badgeColor = "bg-yellow-500";
-      status = "With Customer";
-    }
-    if (!p.active) {
-      badgeColor = "bg-red-500";
-      status = "Out of Rotation";
-    }
-
+  activeQueue.forEach(p => {
     const div = document.createElement("div");
     div.className = "flex items-center justify-between bg-white p-3 rounded shadow player";
     div.dataset.name = p.name;
+
     div.innerHTML = `
       <div class="flex items-center gap-2">
         <span class="inline-block w-4 h-4 rounded-full" style="background-color: ${p.color}"></span>
-        <span>${p.name}</span>
+        <span class="font-semibold">${p.name}</span>
       </div>
-      <span class="text-xs text-white px-2 py-1 rounded ${badgeColor}">${status}</span>
+      <span class="text-xs text-white px-2 py-1 rounded bg-green-600">Active</span>
     `;
 
     queueDisplay.appendChild(div);
   });
 
-  // FLIP animation: Capture new positions and animate
+  // Animate transition with FLIP
   const newPositions = {};
   document.querySelectorAll(".player").forEach(el => {
     const name = el.dataset.name;
@@ -143,11 +132,11 @@ function updateDisplay(playersMap) {
 
   document.querySelectorAll(".player").forEach(el => {
     const name = el.dataset.name;
-    const oldPos = oldPositions[name];
-    const newPos = newPositions[name];
-    if (oldPos) {
-      const dx = oldPos.left - newPos.left;
-      const dy = oldPos.top - newPos.top;
+    const old = oldPositions[name];
+    const now = newPositions[name];
+    if (old) {
+      const dx = old.left - now.left;
+      const dy = old.top - now.top;
       el.style.transform = `translate(${dx}px, ${dy}px)`;
       el.style.transition = "transform 0s";
       requestAnimationFrame(() => {
