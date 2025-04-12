@@ -93,18 +93,22 @@ function updateDisplay(playersMap) {
   const allPlayers = Object.values(playersMap || {});
   const activePlayers = allPlayers.filter(p => p.active && !p.skip).sort((a, b) => a.joinedAt - b.joinedAt);
   const sortedPlayers = allPlayers.sort((a, b) => a.joinedAt - b.joinedAt);
-
   const next = activePlayers[0];
 
   nextUpDiv.innerHTML = next
     ? `<div class="font-bold">Next: <span style="color:${next.color}">${next.name}</span></div>`
     : "No one";
 
-  // Rebuild queue visually in correct order
-  const newQueue = document.createElement("div");
-  newQueue.id = "queue";
-  newQueue.className = "space-y-1 mb-6";
+  // FLIP animation: Capture first positions
+  const oldPositions = {};
+  document.querySelectorAll(".player").forEach(el => {
+    oldPositions[el.dataset.name] = el.getBoundingClientRect();
+  });
 
+  // Clear queue display
+  queueDisplay.innerHTML = "";
+
+  // Rebuild with updated order
   sortedPlayers.forEach(p => {
     let badgeColor = "bg-green-600", status = "Active";
     if (p.skip) {
@@ -117,7 +121,8 @@ function updateDisplay(playersMap) {
     }
 
     const div = document.createElement("div");
-    div.className = "flex items-center justify-between bg-white p-3 rounded shadow player player-enter";
+    div.className = "flex items-center justify-between bg-white p-3 rounded shadow player";
+    div.dataset.name = p.name;
     div.innerHTML = `
       <div class="flex items-center gap-2">
         <span class="inline-block w-4 h-4 rounded-full" style="background-color: ${p.color}"></span>
@@ -125,20 +130,32 @@ function updateDisplay(playersMap) {
       </div>
       <span class="text-xs text-white px-2 py-1 rounded ${badgeColor}">${status}</span>
     `;
-    newQueue.appendChild(div);
 
-    requestAnimationFrame(() => {
-      div.classList.remove("player-enter");
-      div.classList.add("player-enter-active");
-    });
+    queueDisplay.appendChild(div);
   });
 
-  const oldQueue = document.getElementById("queue");
-  if (oldQueue) {
-    oldQueue.replaceWith(newQueue);
-  } else {
-    queueDisplay.appendChild(newQueue);
-  }
+  // FLIP animation: Capture new positions and animate
+  const newPositions = {};
+  document.querySelectorAll(".player").forEach(el => {
+    const name = el.dataset.name;
+    newPositions[name] = el.getBoundingClientRect();
+  });
+
+  document.querySelectorAll(".player").forEach(el => {
+    const name = el.dataset.name;
+    const oldPos = oldPositions[name];
+    const newPos = newPositions[name];
+    if (oldPos) {
+      const dx = oldPos.left - newPos.left;
+      const dy = oldPos.top - newPos.top;
+      el.style.transform = `translate(${dx}px, ${dy}px)`;
+      el.style.transition = "transform 0s";
+      requestAnimationFrame(() => {
+        el.style.transform = "";
+        el.style.transition = "transform 300ms ease";
+      });
+    }
+  });
 }
 
 function setStatus(type) {
