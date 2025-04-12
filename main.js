@@ -92,23 +92,26 @@ function joinWithName(name, color) {
 function updateDisplay(playersMap) {
   const allPlayers = Object.values(playersMap || {});
   const activePlayers = allPlayers.filter(p => p.active && !p.skip).sort((a, b) => a.joinedAt - b.joinedAt);
+  const sortedPlayers = allPlayers.sort((a, b) => a.joinedAt - b.joinedAt);
+
   const next = activePlayers[0];
 
   nextUpDiv.innerHTML = next
     ? `<div class="font-bold">Next: <span style="color:${next.color}">${next.name}</span></div>`
     : "No one";
 
-  // Create a new animated queue
+  // Rebuild queue visually in correct order
   const newQueue = document.createElement("div");
   newQueue.id = "queue";
   newQueue.className = "space-y-1 mb-6";
 
-  allPlayers.sort((a, b) => a.joinedAt - b.joinedAt).forEach(p => {
+  sortedPlayers.forEach(p => {
     let badgeColor = "bg-green-600", status = "Active";
     if (p.skip) {
       badgeColor = "bg-yellow-500";
       status = "With Customer";
-    } else if (!p.active) {
+    }
+    if (!p.active) {
       badgeColor = "bg-red-500";
       status = "Out of Rotation";
     }
@@ -130,7 +133,6 @@ function updateDisplay(playersMap) {
     });
   });
 
-  // Replace the current queue visually
   const oldQueue = document.getElementById("queue");
   if (oldQueue) {
     oldQueue.replaceWith(newQueue);
