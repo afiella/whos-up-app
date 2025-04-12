@@ -11,10 +11,8 @@ const firebaseConfig = {
 firebase.initializeApp(firebaseConfig);
 const db = firebase.database();
 
-// ✅ Detect current room from path or stored override
-let currentRoom = localStorage.getItem("roomOverride") ||
-  (window.location.pathname.includes("bh") ? "BH" : "59");
-
+// ✅ Detect room from <body data-room="...">
+let currentRoom = document.body.dataset.room || "BH";
 let currentUser = null;
 
 const nameList = ["Archie", "Ella", "Veronica", "Dan", "Alex", "Adam", "Darryl", "Michael", "Tia", "Rob", "Jeremy", "Nassir", "Greg"];
@@ -28,7 +26,6 @@ const joinedMessage = document.getElementById("joinedMessage");
 const nextUpDiv = document.getElementById("nextUp");
 const takenModal = document.getElementById("takenModal");
 
-// ✅ Render available name buttons
 function renderNameButtons() {
   nameButtonsContainer.innerHTML = "";
   nameList.forEach((name, index) => {
@@ -41,7 +38,6 @@ function renderNameButtons() {
     nameButtonsContainer.appendChild(btn);
   });
 
-  // 🔄 Listen for taken names across rooms
   db.ref("rooms").on("value", (snapshot) => {
     const allRooms = snapshot.val() || {};
     const takenNames = new Set();
@@ -63,7 +59,6 @@ function renderNameButtons() {
   });
 }
 
-// ✅ Try to join name
 function attemptJoin(name, color) {
   const userRef = db.ref(`rooms/${currentRoom}/players/${name}`);
   userRef.once("value", (snapshot) => {
@@ -79,14 +74,12 @@ function closeModal() {
   if (takenModal) takenModal.classList.add("hidden");
 }
 
-// ✅ Join with chosen name and color
 function joinWithName(name, color) {
   const joinedAt = Date.now();
   currentUser = { name, color, active: true, skip: false, joinedAt, room: currentRoom };
 
   db.ref(`rooms/${currentRoom}/players/${name}`).set(currentUser);
   localStorage.setItem("currentUser", JSON.stringify(currentUser));
-  localStorage.setItem("roomOverride", currentRoom); // Save current room
 
   nameSelectSection.classList.add("hidden");
   mainScreen.classList.remove("hidden");
@@ -97,7 +90,6 @@ function joinWithName(name, color) {
   });
 }
 
-// ✅ Display queue
 function updateDisplay(playersMap) {
   const allPlayers = Object.values(playersMap || {});
   const activePlayers = allPlayers
@@ -140,7 +132,6 @@ function updateDisplay(playersMap) {
     : "No one";
 }
 
-// ✅ Update player status
 function setStatus(type) {
   if (!currentUser) return;
   const userRef = db.ref(`rooms/${currentRoom}/players/${currentUser.name}`);
@@ -155,16 +146,13 @@ function setStatus(type) {
   }
 }
 
-// ✅ Leave game
 function leaveGame() {
   if (!currentUser) return;
   db.ref(`rooms/${currentRoom}/players/${currentUser.name}`).remove();
   localStorage.removeItem("currentUser");
-  localStorage.removeItem("roomOverride");
   window.location.href = "index.html";
 }
 
-// ✅ Auto rejoin on load
 window.addEventListener("load", () => {
   const savedUser = JSON.parse(localStorage.getItem("currentUser"));
   if (savedUser && savedUser.name && savedUser.color && savedUser.room) {
