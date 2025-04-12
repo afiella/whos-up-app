@@ -6,8 +6,8 @@
   <title>Who's Up App</title>
   <link rel="icon" type="image/png" href="header.jpeg" />
   <!-- Manifest and Theme Color for PWA -->
-<link rel="manifest" href="/manifest.json" />
-<meta name="theme-color" content="#2f4156" />
+  <link rel="manifest" href="/manifest.json" />
+  <meta name="theme-color" content="#2f4156" />
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://unpkg.com/@dotlottie/player-component@2.7.12/dist/dotlottie-player.mjs" type="module"></script>
   <style>
@@ -62,11 +62,10 @@
       <a href="59.html" class="transition-link block bg-purple-600 text-white py-3 rounded-lg hover:bg-purple-700 font-semibold">Join 59</a>
       <a href="admin.html" class="transition-link block bg-gray-700 text-white py-3 rounded-lg hover:bg-gray-800 font-semibold">Admin</a>
       <a href="modpanel.html" class="transition-link block bg-orange-500 text-white py-2 rounded hover:bg-orange-600 transition">Moderator</a>
-</div>
     </div>
   </div>
 
-  <!-- JS: Transition Logic -->
+  <!-- Transition JS -->
   <script>
     document.querySelectorAll(".transition-link").forEach(link => {
       link.addEventListener("click", function (e) {
@@ -82,76 +81,53 @@
       });
     });
   </script>
+
+  <!-- Service Worker -->
   <script>
-  if ("serviceWorker" in navigator) {
-    window.addEventListener("load", function () {
-      navigator.serviceWorker.register("/service-worker.js").then(
-        function (registration) {
-          console.log("ServiceWorker registered with scope:", registration.scope);
-        },
-        function (err) {
-          console.log("ServiceWorker registration failed:", err);
-        }
-      );
-    });
-  }
-</script>
-  <script>
-  // Rejoin logic
-  window.addEventListener("DOMContentLoaded", () => {
-    const stored = JSON.parse(localStorage.getItem("currentUser") || "{}");
-    const path = window.location.pathname;
-    
-    if (stored?.name && !path.includes("bh") && !path.includes("59")) {
-      const room = stored.room || (stored && stored.name && stored.color && window.confirm(`Rejoin ${stored.name} in your last room?`) ? (stored.roomHint || "BH") : null);
-      if (room === "BH" || room === "59") {
-        window.location.href = `${room.toLowerCase()}.html`;
-      }
+    if ("serviceWorker" in navigator) {
+      window.addEventListener("load", function () {
+        navigator.serviceWorker.register("/service-worker.js").then(
+          function (registration) {
+            console.log("ServiceWorker registered with scope:", registration.scope);
+          },
+          function (err) {
+            console.log("ServiceWorker registration failed:", err);
+          }
+        );
+      });
     }
-  });
-</script>
-  <script>
-  window.addEventListener("DOMContentLoaded", () => {
+  </script>
+
+  <!-- Rejoin if still in game -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-app.js";
+    import { getDatabase, ref, get } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-database.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyDkEKUzUhc-nKFLnF1w0MOm6qwpKHTpfaI",
+      authDomain: "who-s-up-app.firebaseapp.com",
+      databaseURL: "https://who-s-up-app-default-rtdb.firebaseio.com",
+      projectId: "who-s-up-app",
+      storageBucket: "who-s-up-app.appspot.com",
+      messagingSenderId: "167292375113",
+      appId: "1:167292375113:web:ce718a1aab4852fe5daf98",
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getDatabase(app);
+
     const stored = JSON.parse(localStorage.getItem("currentUser") || "{}");
 
     if (stored?.name && stored?.room) {
-      // Automatically redirect to the correct room page
-      const roomPage = stored.room.toLowerCase() + ".html";
-      window.location.href = roomPage;
+      const playerRef = ref(db, `rooms/${stored.room}/players/${stored.name}`);
+      get(playerRef).then(snapshot => {
+        if (snapshot.exists()) {
+          window.location.href = stored.room.toLowerCase() + ".html";
+        } else {
+          localStorage.removeItem("currentUser");
+        }
+      });
     }
-  });
-</script>
-  <script type="module">
-  import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-app.js";
-  import { getDatabase, ref, get } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-database.js";
-
-  const firebaseConfig = {
-    apiKey: "AIzaSyDkEKUzUhc-nKFLnF1w0MOm6qwpKHTpfaI",
-    authDomain: "who-s-up-app.firebaseapp.com",
-    databaseURL: "https://who-s-up-app-default-rtdb.firebaseio.com",
-    projectId: "who-s-up-app",
-    storageBucket: "who-s-up-app.appspot.com",
-    messagingSenderId: "167292375113",
-    appId: "1:167292375113:web:ce718a1aab4852fe5daf98",
-  };
-
-  const app = initializeApp(firebaseConfig);
-  const db = getDatabase(app);
-
-  const stored = JSON.parse(localStorage.getItem("currentUser") || "{}");
-
-  if (stored?.name && stored?.room) {
-    const playerRef = ref(db, `rooms/${stored.room}/players/${stored.name}`);
-    get(playerRef).then(snapshot => {
-      if (snapshot.exists()) {
-        // Still in game — redirect
-        window.location.href = stored.room.toLowerCase() + ".html";
-      } else {
-        // No longer in game — clean up storage
-        localStorage.removeItem("currentUser");
-      }
-    });
-  }
-</script>
+  </script>
 </body>
 </html>
