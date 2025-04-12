@@ -9,16 +9,8 @@
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
   <style>
     .player {
-      transition: transform 0.3s ease, opacity 0.3s ease;
-      will-change: transform, opacity;
-    }
-    .player-enter {
-      transform: translateY(20px);
-      opacity: 0;
-    }
-    .player-enter-active {
-      transform: translateY(0);
-      opacity: 1;
+      transition: transform 0.3s ease;
+      will-change: transform;
     }
   </style>
 </head>
@@ -44,7 +36,7 @@
 
         <div>
           <h2 class="text-md font-semibold mb-2">Player Queue:</h2>
-          <div id="queue" class="space-y-1 mb-6 transition-all duration-300 ease-in-out"></div>
+          <div id="queue" class="space-y-1 mb-6"></div>
         </div>
       </div>
 
