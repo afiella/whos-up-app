@@ -1,5 +1,17 @@
 const CACHE_NAME = "whos-up-cache-v1";
-const urlsToCache = ["/", "/index.html", "/manifest.json", "/main.js", "/bh.html", "/59.html"];
+const urlsToCache = [
+  "/",
+  "/index.html",
+  "/manifest.json",
+  "/main.js",
+  "/admin.js",
+  "/mod.js",
+  "/bh.html",
+  "/59.html",
+  "/admin.html",
+  "/modpanel.html",
+  "/header.jpeg"
+];
 
 // Install
 self.addEventListener("install", (event) => {
@@ -8,24 +20,37 @@ self.addEventListener("install", (event) => {
       return cache.addAll(urlsToCache);
     })
   );
+  self.skipWaiting(); // Activate immediately after install
 });
 
-// Activate
+// Activate and clean up old caches
 self.addEventListener("activate", (event) => {
   event.waitUntil(
-    caches.keys().then((cacheNames) =>
-      Promise.all(cacheNames.map((name) => {
-        if (name !== CACHE_NAME) return caches.delete(name);
-      }))
+    caches.keys().then((keys) =>
+      Promise.all(
+        keys.map((key) => {
+          if (key !== CACHE_NAME) {
+            return caches.delete(key);
+          }
+        })
+      )
     )
   );
+  self.clients.claim(); // Take control of all clients
 });
 
-// Fetch
+// Fetch from cache first, fall back to network
 self.addEventListener("fetch", (event) => {
+  if (event.request.method !== "GET") return;
+
   event.respondWith(
-    caches.match(event.request).then((response) =>
-      response || fetch(event.request)
-    )
+    caches.match(event.request).then((cachedResponse) => {
+      return (
+        cachedResponse ||
+        fetch(event.request).catch(() =>
+          caches.match("/index.html")
+        )
+      );
+    })
   );
 });
