@@ -121,5 +121,37 @@
     }
   });
 </script>
+  <script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-app.js";
+  import { getDatabase, ref, get } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-database.js";
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyDkEKUzUhc-nKFLnF1w0MOm6qwpKHTpfaI",
+    authDomain: "who-s-up-app.firebaseapp.com",
+    databaseURL: "https://who-s-up-app-default-rtdb.firebaseio.com",
+    projectId: "who-s-up-app",
+    storageBucket: "who-s-up-app.appspot.com",
+    messagingSenderId: "167292375113",
+    appId: "1:167292375113:web:ce718a1aab4852fe5daf98",
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const db = getDatabase(app);
+
+  const stored = JSON.parse(localStorage.getItem("currentUser") || "{}");
+
+  if (stored?.name && stored?.room) {
+    const playerRef = ref(db, `rooms/${stored.room}/players/${stored.name}`);
+    get(playerRef).then(snapshot => {
+      if (snapshot.exists()) {
+        // Still in game — redirect
+        window.location.href = stored.room.toLowerCase() + ".html";
+      } else {
+        // No longer in game — clean up storage
+        localStorage.removeItem("currentUser");
+      }
+    });
+  }
+</script>
 </body>
 </html>
