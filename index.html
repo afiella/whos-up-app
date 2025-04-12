@@ -110,5 +110,16 @@
     }
   });
 </script>
+  <script>
+  window.addEventListener("DOMContentLoaded", () => {
+    const stored = JSON.parse(localStorage.getItem("currentUser") || "{}");
+
+    if (stored?.name && stored?.room) {
+      // Automatically redirect to the correct room page
+      const roomPage = stored.room.toLowerCase() + ".html";
+      window.location.href = roomPage;
+    }
+  });
+</script>
 </body>
 </html>
