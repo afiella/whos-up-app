@@ -12,6 +12,17 @@
       transition: transform 0.3s ease;
       will-change: transform;
     }
+    #nextUpBanner {
+      position: sticky;
+      top: 0;
+      z-index: 10;
+      background: #ebf8ff;
+      padding: 0.75rem;
+      font-weight: 600;
+      text-align: center;
+      border-radius: 0.375rem;
+      margin-bottom: 1rem;
+    }
   </style>
 </head>
 <body class="bg-gray-100 min-h-screen p-4" data-room="BH">
@@ -30,9 +41,8 @@
           <p id="joinedMessage" class="text-green-600 font-medium"></p>
         </div>
 
-        <div class="text-center mb-4">
-          <div id="nextUp" class="font-bold text-blue-600"></div>
-        </div>
+        <!-- Next Up Banner -->
+        <div id="nextUp" class="text-blue-600 text-sm font-semibold mb-4"></div>
 
         <div>
           <h2 class="text-md font-semibold mb-2">Player Queue:</h2>
