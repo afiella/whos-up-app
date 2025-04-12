@@ -152,3 +152,22 @@ function leaveGame() {
 }
 
 renderNameButtons();
+window.addEventListener("load", () => {
+  const savedUser = JSON.parse(localStorage.getItem("currentUser"));
+  if (savedUser && savedUser.name && savedUser.color) {
+    currentUser = savedUser;
+    nameSelectSection.classList.add("hidden");
+    mainScreen.classList.remove("hidden");
+    joinedMessage.textContent = `Welcome back, ${currentUser.name}!`;
+
+    db.ref(`rooms/${currentRoom}/players/${currentUser.name}`).once("value", (snapshot) => {
+      if (!snapshot.exists()) {
+        db.ref(`rooms/${currentRoom}/players/${currentUser.name}`).set(currentUser);
+      }
+    });
+
+    db.ref(`rooms/${currentRoom}/players`).on("value", snapshot => {
+      updateDisplay(snapshot.val());
+    });
+  }
+});
