@@ -118,7 +118,7 @@ function renderGroup(group, containerId, badgeColor, statusLabel) {
     div.innerHTML = `
       <div class="flex items-center gap-2">
         <span class="inline-block w-4 h-4 rounded-full" style="background-color: ${p.color}"></span>
-        <span>${p.name}</span>
+        <span class="text-lg font-semibold">${p.name}</span>
       </div>
       <span class="text-xs text-white px-2 py-1 rounded ${badgeColor}">${statusLabel}</span>
     `;
