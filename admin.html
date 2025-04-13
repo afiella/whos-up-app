@@ -1,110 +1,65 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Admin</title>
+  <title>Admin: View BH & 59</title>
+  <!-- Tailwind CSS (Optional) -->
   <script src="https://cdn.tailwindcss.com"></script>
-  <style>
-    .action-buttons {
-      max-height: 0;
-      overflow: hidden;
-      transition: max-height 0.3s ease;
-    }
-    .expanded .action-buttons {
-      max-height: 200px;
-    }
-    .dragging {
-      opacity: 0.5;
-    }
-    .drag-over {
-      border: 2px dashed #3b82f6;
-      background-color: #eff6ff;
-    }
-    /* Hide admin UI until logged in */
-    #adminUI {
-      display: none;
-    }
-  </style>
 </head>
-<body class="bg-gray-100 min-h-screen p-4">
-  <!-- LOGIN FORM -->
-  <div id="loginForm" class="max-w-md mx-auto bg-white rounded p-4 shadow mb-6">
-    <h2 class="text-xl font-semibold mb-4 text-center">Admin Login</h2>
-    <!-- Wrap the fields in an actual <form> so Enter triggers submit -->
-    <form id="loginFormInner">
-      <div class="mb-4">
-        <label for="username" class="block text-sm font-medium mb-1">Username</label>
-        <input
-          type="text"
-          id="username"
-          class="w-full border border-gray-300 rounded px-3 py-2"
-          placeholder="Enter username"
-        />
-      </div>
-      <div class="mb-4">
-        <label for="password" class="block text-sm font-medium mb-1">Password</label>
-        <input
-          type="password"
-          id="password"
-          class="w-full border border-gray-300 rounded px-3 py-2"
-          placeholder="Enter password"
-        />
-      </div>
-      <button
-        type="submit"
-        class="bg-blue-600 text-white px-4 py-2 rounded w-full hover:bg-blue-700"
-      >
-        Login
-      </button>
-    </form>
-  </div>
+<body class="p-4 bg-gray-100">
+  <div class="max-w-5xl mx-auto space-y-8">
+    <h1 class="text-2xl font-bold text-center">Admin: View BH & 59 Rooms</h1>
 
-  <!-- ADMIN UI (HIDDEN UNTIL LOGGED IN) -->
-  <div id="adminUI" class="max-w-2xl mx-auto">
-    <div class="text-center mb-6">
-      <h1 class="text-2xl font-bold">Admin Panel</h1>
-      <div class="mt-2 flex flex-col items-center gap-2">
-        <div>
-          <button onclick="switchRoom('BH')" class="bg-blue-600 text-white px-4 py-2 rounded mr-2 hover:bg-blue-700">
-            View BH
-          </button>
-          <button onclick="switchRoom('59')" class="bg-purple-600 text-white px-4 py-2 rounded hover:bg-purple-700">
-            View 59
-          </button>
-        </div>
-        <p class="text-sm text-gray-600" id="roomTitle">Room: </p>
-        <p class="text-sm text-gray-600" id="currentNextUp"></p>
+    <!-- BH ROOM SECTION -->
+    <div id="bhSection" class="bg-white p-4 rounded shadow">
+      <h2 class="text-xl font-semibold mb-2">BH Room</h2>
+      <p id="bhNextUp" class="text-blue-600 font-bold mb-3"></p>
+
+      <div class="mb-4">
+        <h3 class="font-semibold text-green-700">Active Players</h3>
+        <div id="bhActive" class="space-y-2 mt-2"></div>
+      </div>
+      <div class="mb-4">
+        <h3 class="font-semibold text-yellow-600">With Customer</h3>
+        <div id="bhSkip" class="space-y-2 mt-2"></div>
+      </div>
+      <div class="mb-4">
+        <h3 class="font-semibold text-red-600">Out of Rotation</h3>
+        <div id="bhOut" class="space-y-2 mt-2"></div>
       </div>
     </div>
 
-    <div class="mb-4 text-center">
-      <button
-        onclick="toggleReorderMode()"
-        id="reorderToggle"
-        class="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700"
-      >
-        Enable Reorder Mode
-      </button>
+    <!-- 59 ROOM SECTION -->
+    <div id="fiftyNineSection" class="bg-white p-4 rounded shadow">
+      <h2 class="text-xl font-semibold mb-2">59 Room</h2>
+      <p id="fiftyNineNextUp" class="text-blue-600 font-bold mb-3"></p>
+
+      <div class="mb-4">
+        <h3 class="font-semibold text-green-700">Active Players</h3>
+        <div id="fiftyNineActive" class="space-y-2 mt-2"></div>
+      </div>
+      <div class="mb-4">
+        <h3 class="font-semibold text-yellow-600">With Customer</h3>
+        <div id="fiftyNineSkip" class="space-y-2 mt-2"></div>
+      </div>
+      <div class="mb-4">
+        <h3 class="font-semibold text-red-600">Out of Rotation</h3>
+        <div id="fiftyNineOut" class="space-y-2 mt-2"></div>
+      </div>
     </div>
 
-    <div id="playerList" class="space-y-3 mb-6"></div>
-
+    <!-- Optional: Reset Button -->
     <div class="text-center">
       <button
-        onclick="resetAllPlayers()"
+        id="resetBothRooms"
         class="bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700"
       >
-        Reset Players
+        Reset Both Rooms
       </button>
-    </div>
-
-    <div class="mt-6 text-center">
-      <a href="index.html" class="text-sm text-blue-600 underline">← Back to Landing Page</a>
     </div>
   </div>
 
-  <!-- Your admin.js file -->
+  <!-- Our separate admin.js file -->
   <script type="module" src="admin.js"></script>
 </body>
 </html>
