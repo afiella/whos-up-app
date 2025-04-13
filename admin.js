@@ -12,14 +12,15 @@ import {
 
 // --- FIREBASE CONFIG ---
 const firebaseConfig = {
-  apiKey: "YOUR_API_KEY",
-  authDomain: "YOUR_AUTH_DOMAIN",
-  databaseURL: "YOUR_DATABASE_URL",
-  projectId: "YOUR_PROJECT_ID",
-  storageBucket: "YOUR_STORAGE_BUCKET",
-  messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
-  appId: "YOUR_APP_ID"
+  apiKey: "AIzaSyDkEKUzUhc-nKFLnF1w0MOm6qwpKHTpfaI",
+  authDomain: "who-s-up-app.firebaseapp.com",
+  databaseURL: "https://who-s-up-app-default-rtdb.firebaseio.com",
+  projectId: "who-s-up-app",
+  storageBucket: "who-s-up-app.appspot.com",
+  messagingSenderId: "167292375113",
+  appId: "1:167292375113:web:ce718a1aab4852fe5daf98"
 };
+
 
 // Initialize Firebase
 const app = initializeApp(firebaseConfig);
