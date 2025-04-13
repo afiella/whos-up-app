@@ -92,47 +92,41 @@ function joinWithName(name, color) {
 function updateDisplay(playersMap) {
   const allPlayers = Object.values(playersMap || {});
   const activePlayers = allPlayers.filter(p => p.active && !p.skip).sort((a, b) => a.joinedAt - b.joinedAt);
-  const skipPlayers = allPlayers.filter(p => p.active && p.skip).sort((a, b) => a.joinedAt - b.joinedAt);
+  const skipPlayers = allPlayers.filter(p => p.skip && p.active).sort((a, b) => a.joinedAt - b.joinedAt);
   const outPlayers = allPlayers.filter(p => !p.active).sort((a, b) => a.joinedAt - b.joinedAt);
+
   const next = activePlayers[0];
-
   nextUpDiv.innerHTML = next
-    ? `<div class="font-bold text-blue-600">Next: <span style="color:${next.color}">${next.name}</span></div>`
-    : `<div class="font-bold text-blue-600">No one</div>`;
+    ? `<div class="font-bold">Next: <span style="color:${next.color}">${next.name}</span></div>`
+    : "<span class='text-blue-600 font-semibold'>No one</span>";
 
-  queueDisplay.innerHTML = `
-    <h2 class="text-md font-semibold mb-2">Player Queue:</h2>
-    <div id="activePlayers" class="space-y-1 mb-6"></div>
-    <h2 class="text-md font-semibold mb-2">With Customer:</h2>
-    <div id="skipPlayers" class="space-y-1 mb-6"></div>
-    <h2 class="text-md font-semibold mb-2">Out of Rotation:</h2>
-    <div id="outPlayers" class="space-y-1 mb-6"></div>
-  `;
+  // Clear all sections first
+  document.getElementById("activePlayers").innerHTML = "";
+  document.getElementById("skipPlayers").innerHTML = "";
+  document.getElementById("outPlayers").innerHTML = "";
 
-  const renderCard = (p, badgeColor, status) => {
+  // Render each group
+  renderGroup(activePlayers, "activePlayers", "bg-green-600", "Active");
+  renderGroup(skipPlayers, "skipPlayers", "bg-yellow-500", "With Customer");
+  renderGroup(outPlayers, "outPlayers", "bg-red-500", "Out of Rotation");
+}
+
+function renderGroup(group, containerId, badgeColor, statusLabel) {
+  const container = document.getElementById(containerId);
+  group.forEach(p => {
     const div = document.createElement("div");
     div.className = "flex items-center justify-between bg-white p-3 rounded shadow player transition-all duration-300 ease-in-out";
     div.dataset.name = p.name;
+
     div.innerHTML = `
       <div class="flex items-center gap-2">
         <span class="inline-block w-4 h-4 rounded-full" style="background-color: ${p.color}"></span>
         <span>${p.name}</span>
       </div>
-      <span class="text-xs text-white px-2 py-1 rounded ${badgeColor}">${status}</span>
+      <span class="text-xs text-white px-2 py-1 rounded ${badgeColor}">${statusLabel}</span>
     `;
-    return div;
-  };
 
-  activePlayers.forEach(p => {
-    document.getElementById("activePlayers").appendChild(renderCard(p, "bg-green-600", "Active"));
-  });
-
-  skipPlayers.forEach(p => {
-    document.getElementById("skipPlayers").appendChild(renderCard(p, "bg-yellow-500", "With Customer"));
-  });
-
-  outPlayers.forEach(p => {
-    document.getElementById("outPlayers").appendChild(renderCard(p, "bg-red-500", "Out of Rotation"));
+    container.appendChild(div);
   });
 }
 
