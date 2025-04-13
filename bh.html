@@ -7,13 +7,19 @@
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+  <style>
+    .player {
+      transition: transform 0.3s ease, opacity 0.3s ease;
+      will-change: transform, opacity;
+    }
+  </style>
 </head>
 <body class="bg-gray-100 min-h-screen p-4" data-room="BH">
   <div class="max-w-xl mx-auto bg-white p-6 rounded-lg shadow-lg flex flex-col justify-between min-h-[90vh]">
 
     <!-- Name Select Section -->
     <div id="nameSelect">
-      <p class="text-center mb-2">Select Your Name</p>
+      <p class="text-center mb-2 font-medium">Select Your Name</p>
       <div id="nameButtons" class="flex flex-wrap gap-3 justify-center mb-4"></div>
     </div>
 
@@ -30,13 +36,7 @@
 
         <div>
           <h2 class="text-md font-semibold mb-2">Player Queue:</h2>
-          <div id="queue" class="space-y-1 mb-6 transition-all duration-300"></div>
-
-          <h2 class="text-md font-semibold mb-2 mt-6 text-yellow-700">With Customer:</h2>
-          <div id="skipQueue" class="space-y-1 mb-6"></div>
-
-          <h2 class="text-md font-semibold mb-2 mt-6 text-gray-600">Out of Rotation:</h2>
-          <div id="outQueue" class="space-y-1"></div>
+          <div id="queue" class="space-y-6"></div>
         </div>
       </div>
 
