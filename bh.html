@@ -4,13 +4,16 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>BH Room</title>
+  <!-- Tailwind CSS -->
   <script src="https://cdn.tailwindcss.com"></script>
+
+  <!-- Firebase (v8.x) -->
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
 </head>
 <body class="bg-gray-100 min-h-screen p-4" data-room="BH">
-  <div class="max-w-xl mx-auto bg-white p-6 rounded-lg shadow-lg flex flex-col justify-between min-h-[90vh]">
 
+  <div class="max-w-xl mx-auto bg-white p-6 rounded-lg shadow-lg flex flex-col justify-between min-h-[90vh]">
     <!-- Name Select Section -->
     <div id="nameSelect">
       <p class="text-center mb-2">Select Your Name</p>
@@ -55,6 +58,175 @@
     </div>
   </div>
 
-  <script src="main.js"></script>
+  <!-- Inline Script for BH Room Logic -->
+  <script>
+    // ---------------------------------------------------------
+    // 1) Initialize Firebase (v8 Syntax)
+    //    Replace these placeholder values with your real config
+    // ---------------------------------------------------------
+    const firebaseConfig = {
+      apiKey: "YOUR_API_KEY",
+      authDomain: "YOUR_AUTH_DOMAIN",
+      databaseURL: "YOUR_DATABASE_URL",
+      projectId: "YOUR_PROJECT_ID",
+      storageBucket: "YOUR_STORAGE_BUCKET",
+      messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
+      appId: "YOUR_APP_ID"
+    };
+    firebase.initializeApp(firebaseConfig);
+
+    // Reference to Database
+    const db = firebase.database();
+
+    // ---------------------------------------------------------
+    // 2) DOM References
+    // ---------------------------------------------------------
+    let currentName = null; // the name of the current user
+    const room            = document.body.getAttribute("data-room") || "BH";
+    const nameSelectEl    = document.getElementById("nameSelect");
+    const mainScreenEl    = document.getElementById("mainScreen");
+    const nameButtonsEl   = document.getElementById("nameButtons");
+    const joinedMessageEl = document.getElementById("joinedMessage");
+    const nextUpEl        = document.getElementById("nextUp");
+    const activePlayersEl = document.getElementById("activePlayers");
+    const skipPlayersEl   = document.getElementById("skipPlayers");
+    const outPlayersEl    = document.getElementById("outPlayers");
+
+    // ---------------------------------------------------------
+    // 3) Name Buttons (Example: 5 fixed names)
+    // ---------------------------------------------------------
+    function populateNameButtons() {
+      const possibleNames = ["Tony", "Bruce", "Natasha", "Steve", "Clint"];
+      possibleNames.forEach(name => {
+        const btn = document.createElement("button");
+        btn.textContent = name;
+        btn.className = "bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600";
+        btn.addEventListener("click", () => joinGame(name));
+        nameButtonsEl.appendChild(btn);
+      });
+    }
+
+    // ---------------------------------------------------------
+    // 4) Join the Room
+    // ---------------------------------------------------------
+    function joinGame(name) {
+      currentName = name;
+      const playerRef = db.ref(`rooms/${room}/players/${currentName}`);
+
+      playerRef.set({
+        name: currentName,
+        active: true,
+        skip: false,
+        joinedAt: firebase.database.ServerValue.TIMESTAMP,
+        color: getRandomColor() // Optional random color
+      });
+
+      // Switch UI from name select to main screen
+      nameSelectEl.classList.add("hidden");
+      mainScreenEl.classList.remove("hidden");
+      joinedMessageEl.textContent = `You have joined as ${currentName}!`;
+    }
+
+    // ---------------------------------------------------------
+    // 5) Listen to Room Data
+    // ---------------------------------------------------------
+    function listenToRoom(roomKey) {
+      const refPlayers = db.ref(`rooms/${roomKey}/players`);
+      refPlayers.on("value", (snapshot) => {
+        const data = snapshot.val() || {};
+        updateUI(data);
+      });
+    }
+
+    // ---------------------------------------------------------
+    // 6) Update the UI
+    // ---------------------------------------------------------
+    function updateUI(playersData) {
+      // Clear existing lists
+      activePlayersEl.innerHTML = "";
+      skipPlayersEl.innerHTML   = "";
+      outPlayersEl.innerHTML    = "";
+      nextUpEl.textContent      = "";
+
+      // Convert object to array, sort by joinedAt
+      const entries = Object.entries(playersData).sort((a, b) => a[1].joinedAt - b[1].joinedAt);
+
+      // Determine the "next up" (first active, non-skipped)
+      const firstActive = entries.find(([_, p]) => p.active && !p.skip);
+      if (firstActive) {
+        nextUpEl.textContent = `Next Up: ${firstActive[0]}`;
+      }
+
+      // Populate each queue
+      entries.forEach(([playerKey, player]) => {
+        const div = document.createElement("div");
+        div.textContent = player.name;
+        div.className = "border px-2 py-1 rounded";
+
+        if (player.active && !player.skip) {
+          activePlayersEl.appendChild(div);
+        } else if (player.active && player.skip) {
+          skipPlayersEl.appendChild(div);
+        } else {
+          outPlayersEl.appendChild(div);
+        }
+      });
+    }
+
+    // ---------------------------------------------------------
+    // 7) Set player status: "active" / "skip" / "inactive"
+    // ---------------------------------------------------------
+    window.setStatus = function(status) {
+      if (!currentName) {
+        alert("You have not joined the game.");
+        return;
+      }
+      const playerRef = db.ref(`rooms/${room}/players/${currentName}`);
+      if (status === "active") {
+        playerRef.update({ active: true, skip: false, joinedAt: firebase.database.ServerValue.TIMESTAMP });
+      } else if (status === "skip") {
+        playerRef.update({ active: true, skip: true, joinedAt: firebase.database.ServerValue.TIMESTAMP });
+      } else {
+        // 'inactive'
+        playerRef.update({ active: false, skip: false });
+      }
+    };
+
+    // ---------------------------------------------------------
+    // 8) Leave the Game
+    // ---------------------------------------------------------
+    window.leaveGame = function() {
+      if (!currentName) return;
+      const playerRef = db.ref(`rooms/${room}/players/${currentName}`);
+      playerRef.remove();
+
+      // Switch UI back to name select
+      currentName = null;
+      nameSelectEl.classList.remove("hidden");
+      mainScreenEl.classList.add("hidden");
+      joinedMessageEl.textContent = "";
+      nextUpEl.textContent = "";
+    };
+
+    // ---------------------------------------------------------
+    // 9) Helper: Get Random Color (optional)
+    // ---------------------------------------------------------
+    function getRandomColor() {
+      const letters = "0123456789ABCDEF";
+      let color = "#";
+      for (let i = 0; i < 6; i++) {
+        color += letters[Math.floor(Math.random() * 16)];
+      }
+      return color;
+    }
+
+    // ---------------------------------------------------------
+    // 10) On Page Load
+    // ---------------------------------------------------------
+    window.addEventListener("DOMContentLoaded", () => {
+      populateNameButtons();
+      listenToRoom(room);
+    });
+  </script>
 </body>
 </html>
