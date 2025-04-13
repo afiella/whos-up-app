@@ -20,7 +20,6 @@ const colorList = ["#2f4156", "#567c8d", "#c8d9e6", "#f5efeb", "#8c5a7f", "#adb3
 const nameButtonsContainer = document.getElementById("nameButtons");
 const nameSelectSection = document.getElementById("nameSelect");
 const mainScreen = document.getElementById("mainScreen");
-const queueDisplay = document.getElementById("queue");
 const joinedMessage = document.getElementById("joinedMessage");
 const nextUpDiv = document.getElementById("nextUp");
 const takenModal = document.getElementById("takenModal");
@@ -92,20 +91,19 @@ function joinWithName(name, color) {
 function updateDisplay(playersMap) {
   const allPlayers = Object.values(playersMap || {});
   const activePlayers = allPlayers.filter(p => p.active && !p.skip).sort((a, b) => a.joinedAt - b.joinedAt);
-  const skipPlayers = allPlayers.filter(p => p.skip && p.active).sort((a, b) => a.joinedAt - b.joinedAt);
+  const skipPlayers = allPlayers.filter(p => p.active && p.skip).sort((a, b) => a.joinedAt - b.joinedAt);
   const outPlayers = allPlayers.filter(p => !p.active).sort((a, b) => a.joinedAt - b.joinedAt);
-
   const next = activePlayers[0];
-  nextUpDiv.innerHTML = next
-    ? `<div class="font-bold">Next: <span style="color:${next.color}">${next.name}</span></div>`
-    : "<span class='text-blue-600 font-semibold'>No one</span>";
 
-  // Clear all sections first
+  nextUpDiv.innerHTML = next
+    ? `<div class="font-bold text-blue-600">Next: <span style="color:${next.color}">${next.name}</span></div>`
+    : `<div class="font-bold text-blue-600">No one</div>`;
+
+  // Clear existing player groups (but keep headers intact)
   document.getElementById("activePlayers").innerHTML = "";
   document.getElementById("skipPlayers").innerHTML = "";
   document.getElementById("outPlayers").innerHTML = "";
 
-  // Render each group
   renderGroup(activePlayers, "activePlayers", "bg-green-600", "Active");
   renderGroup(skipPlayers, "skipPlayers", "bg-yellow-500", "With Customer");
   renderGroup(outPlayers, "outPlayers", "bg-red-500", "Out of Rotation");
@@ -117,7 +115,6 @@ function renderGroup(group, containerId, badgeColor, statusLabel) {
     const div = document.createElement("div");
     div.className = "flex items-center justify-between bg-white p-3 rounded shadow player transition-all duration-300 ease-in-out";
     div.dataset.name = p.name;
-
     div.innerHTML = `
       <div class="flex items-center gap-2">
         <span class="inline-block w-4 h-4 rounded-full" style="background-color: ${p.color}"></span>
@@ -125,7 +122,6 @@ function renderGroup(group, containerId, badgeColor, statusLabel) {
       </div>
       <span class="text-xs text-white px-2 py-1 rounded ${badgeColor}">${statusLabel}</span>
     `;
-
     container.appendChild(div);
   });
 }
