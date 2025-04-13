@@ -1,65 +1,55 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>Admin: View BH & 59</title>
-  <!-- Tailwind CSS (Optional) -->
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Admin Panel</title>
+  <!-- Tailwind CSS for styling (optional) -->
   <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    /* Optional: simple style for the action buttons to expand/collapse */
+    .action-buttons {
+      max-height: 0;
+      overflow: hidden;
+      transition: max-height 0.3s ease;
+    }
+    .expanded .action-buttons {
+      max-height: 200px;
+    }
+  </style>
 </head>
-<body class="p-4 bg-gray-100">
-  <div class="max-w-5xl mx-auto space-y-8">
-    <h1 class="text-2xl font-bold text-center">Admin: View BH & 59 Rooms</h1>
-
-    <!-- BH ROOM SECTION -->
-    <div id="bhSection" class="bg-white p-4 rounded shadow">
-      <h2 class="text-xl font-semibold mb-2">BH Room</h2>
-      <p id="bhNextUp" class="text-blue-600 font-bold mb-3"></p>
-
-      <div class="mb-4">
-        <h3 class="font-semibold text-green-700">Active Players</h3>
-        <div id="bhActive" class="space-y-2 mt-2"></div>
-      </div>
-      <div class="mb-4">
-        <h3 class="font-semibold text-yellow-600">With Customer</h3>
-        <div id="bhSkip" class="space-y-2 mt-2"></div>
-      </div>
-      <div class="mb-4">
-        <h3 class="font-semibold text-red-600">Out of Rotation</h3>
-        <div id="bhOut" class="space-y-2 mt-2"></div>
-      </div>
+<body class="bg-gray-100 p-4">
+  <div class="max-w-2xl mx-auto">
+    <h1 class="text-2xl font-bold text-center mb-4">Admin Panel</h1>
+    
+    <!-- Room Switch Buttons -->
+    <div class="text-center mb-4">
+      <button onclick="switchRoom('BH')" class="bg-blue-600 text-white px-4 py-2 rounded mr-2">
+        View BH
+      </button>
+      <button onclick="switchRoom('59')" class="bg-purple-600 text-white px-4 py-2 rounded">
+        View 59
+      </button>
     </div>
 
-    <!-- 59 ROOM SECTION -->
-    <div id="fiftyNineSection" class="bg-white p-4 rounded shadow">
-      <h2 class="text-xl font-semibold mb-2">59 Room</h2>
-      <p id="fiftyNineNextUp" class="text-blue-600 font-bold mb-3"></p>
-
-      <div class="mb-4">
-        <h3 class="font-semibold text-green-700">Active Players</h3>
-        <div id="fiftyNineActive" class="space-y-2 mt-2"></div>
-      </div>
-      <div class="mb-4">
-        <h3 class="font-semibold text-yellow-600">With Customer</h3>
-        <div id="fiftyNineSkip" class="space-y-2 mt-2"></div>
-      </div>
-      <div class="mb-4">
-        <h3 class="font-semibold text-red-600">Out of Rotation</h3>
-        <div id="fiftyNineOut" class="space-y-2 mt-2"></div>
-      </div>
+    <!-- Room Title and Next Up -->
+    <div class="text-center mb-4">
+      <p id="roomTitle" class="text-lg font-semibold"></p>
+      <p id="currentNextUp" class="text-sm text-gray-600"></p>
     </div>
 
-    <!-- Optional: Reset Button -->
-    <div class="text-center">
-      <button
-        id="resetBothRooms"
-        class="bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700"
-      >
-        Reset Both Rooms
+    <!-- Player List -->
+    <div id="playerList" class="space-y-3"></div>
+
+    <!-- Reset Button -->
+    <div class="text-center mt-6">
+      <button onclick="resetAllPlayers()" class="bg-red-600 text-white px-4 py-2 rounded">
+        Reset Players
       </button>
     </div>
   </div>
 
-  <!-- Our separate admin.js file -->
+  <!-- Load the separate admin.js file -->
   <script type="module" src="admin.js"></script>
 </body>
 </html>
