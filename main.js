@@ -20,9 +20,9 @@ const colorList = ["#2f4156", "#567c8d", "#c8d9e6", "#f5efeb", "#8c5a7f", "#adb3
 const nameButtonsContainer = document.getElementById("nameButtons");
 const nameSelectSection = document.getElementById("nameSelect");
 const mainScreen = document.getElementById("mainScreen");
-const queueSection = document.getElementById("queue");
-const skipSection = document.getElementById("skipQueue");
-const outSection = document.getElementById("outQueue");
+const queueDisplay = document.getElementById("queue");
+const skipQueueDisplay = document.getElementById("skipQueue");
+const outQueueDisplay = document.getElementById("outQueue");
 const joinedMessage = document.getElementById("joinedMessage");
 const nextUpDiv = document.getElementById("nextUp");
 const takenModal = document.getElementById("takenModal");
@@ -92,50 +92,54 @@ function joinWithName(name, color) {
 }
 
 function updateDisplay(playersMap) {
-  const players = Object.values(playersMap || {});
-  const active = players.filter(p => p.active && !p.skip).sort((a, b) => a.joinedAt - b.joinedAt);
-  const skip = players.filter(p => p.skip && p.active).sort((a, b) => a.joinedAt - b.joinedAt);
-  const out = players.filter(p => !p.active);
+  const allPlayers = Object.values(playersMap || {});
+  const activePlayers = allPlayers.filter(p => p.active && !p.skip).sort((a, b) => a.joinedAt - b.joinedAt);
+  const skipPlayers = allPlayers.filter(p => p.active && p.skip).sort((a, b) => a.joinedAt - b.joinedAt);
+  const outPlayers = allPlayers.filter(p => !p.active).sort((a, b) => a.joinedAt - b.joinedAt);
 
-  const next = active[0];
+  const next = activePlayers[0];
+
   nextUpDiv.innerHTML = next
-    ? `<div class="font-bold text-blue-700 bg-yellow-100 px-3 py-1 rounded shadow inline-block">Next: <span style="color:${next.color}">${next.name}</span></div>`
+    ? `<div class="font-bold bg-blue-100 text-blue-700 px-3 py-1 rounded shadow inline-block">Next: <span style="color:${next.color}">${next.name}</span></div>`
     : "No one";
 
-  // Clear sections
-  queueSection.innerHTML = "";
-  skipSection.innerHTML = "";
-  outSection.innerHTML = "";
+  queueDisplay.innerHTML = "";
+  skipQueueDisplay.innerHTML = "";
+  outQueueDisplay.innerHTML = "";
 
-  const renderGroup = (group, container) => {
-    group.forEach(p => {
-      let badge = "bg-green-600", status = "Active";
-      if (p.skip) {
-        badge = "bg-yellow-500";
-        status = "With Customer";
-      }
-      if (!p.active) {
-        badge = "bg-red-500";
-        status = "Out";
-      }
+  activePlayers.forEach(p => {
+    const div = document.createElement("div");
+    div.className = "flex items-center justify-between bg-white p-3 rounded shadow player mb-2";
+    div.dataset.name = p.name;
+    div.innerHTML = `
+      <div class="flex items-center gap-2">
+        <span class="inline-block w-4 h-4 rounded-full" style="background-color: ${p.color}"></span>
+        <span>${p.name}</span>
+      </div>
+      <span class="text-xs text-white px-2 py-1 rounded bg-green-600">Active</span>
+    `;
+    queueDisplay.appendChild(div);
+  });
 
-      const div = document.createElement("div");
-      div.className = "flex items-center justify-between bg-white p-3 rounded shadow player transition-all";
-      div.dataset.name = p.name;
-      div.innerHTML = `
-        <div class="flex items-center gap-2">
-          <span class="inline-block w-4 h-4 rounded-full" style="background-color: ${p.color}"></span>
-          <span>${p.name}</span>
-        </div>
-        <span class="text-xs text-white px-2 py-1 rounded ${badge}">${status}</span>
-      `;
-      container.appendChild(div);
-    });
-  };
+  skipPlayers.forEach(p => {
+    const div = document.createElement("div");
+    div.className = "flex items-center gap-2 bg-yellow-50 px-3 py-2 rounded border border-yellow-200 shadow";
+    div.innerHTML = `
+      <span class="inline-block w-3 h-3 rounded-full" style="background-color: ${p.color}"></span>
+      <span>${p.name}</span>
+    `;
+    skipQueueDisplay.appendChild(div);
+  });
 
-  renderGroup(active, queueSection);
-  renderGroup(skip, skipSection);
-  renderGroup(out, outSection);
+  outPlayers.forEach(p => {
+    const div = document.createElement("div");
+    div.className = "flex items-center gap-2 bg-gray-50 px-3 py-2 rounded border border-gray-300 shadow";
+    div.innerHTML = `
+      <span class="inline-block w-3 h-3 rounded-full" style="background-color: ${p.color}"></span>
+      <span>${p.name}</span>
+    `;
+    outQueueDisplay.appendChild(div);
+  });
 }
 
 function setStatus(type) {
