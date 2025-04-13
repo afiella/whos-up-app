@@ -9,19 +9,8 @@
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
   <style>
     .player {
-      transition: transform 0.3s ease;
+      transition: transform 0.4s ease;
       will-change: transform;
-    }
-    #nextUpBanner {
-      position: sticky;
-      top: 0;
-      z-index: 10;
-      background: #ebf8ff;
-      padding: 0.75rem;
-      font-weight: 600;
-      text-align: center;
-      border-radius: 0.375rem;
-      margin-bottom: 1rem;
     }
   </style>
 </head>
@@ -41,12 +30,19 @@
           <p id="joinedMessage" class="text-green-600 font-medium"></p>
         </div>
 
-        <!-- Next Up Banner -->
-        <div id="nextUp" class="text-blue-600 text-sm font-semibold mb-4"></div>
+        <div class="text-center mb-4">
+          <div id="nextUp" class="font-bold text-blue-600"></div>
+        </div>
 
         <div>
-          <h2 class="text-md font-semibold mb-2">Player Queue:</h2>
+          <h2 class="text-md font-semibold mb-1">Player Queue:</h2>
           <div id="queue" class="space-y-1 mb-6"></div>
+
+          <h2 class="text-md font-semibold mb-1">With Customer:</h2>
+          <div id="withCustomerBox" class="space-y-1 mb-6"></div>
+
+          <h2 class="text-md font-semibold mb-1">Out of Rotation:</h2>
+          <div id="outOfRotationBox" class="space-y-1 mb-6"></div>
         </div>
       </div>
 
