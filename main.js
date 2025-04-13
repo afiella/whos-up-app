@@ -21,8 +21,6 @@ const nameButtonsContainer = document.getElementById("nameButtons");
 const nameSelectSection = document.getElementById("nameSelect");
 const mainScreen = document.getElementById("mainScreen");
 const queueDisplay = document.getElementById("queue");
-const skipQueueDisplay = document.getElementById("skipQueue");
-const outQueueDisplay = document.getElementById("outQueue");
 const joinedMessage = document.getElementById("joinedMessage");
 const nextUpDiv = document.getElementById("nextUp");
 const takenModal = document.getElementById("takenModal");
@@ -93,52 +91,79 @@ function joinWithName(name, color) {
 
 function updateDisplay(playersMap) {
   const allPlayers = Object.values(playersMap || {});
-  const activePlayers = allPlayers.filter(p => p.active && !p.skip).sort((a, b) => a.joinedAt - b.joinedAt);
-  const skipPlayers = allPlayers.filter(p => p.active && p.skip).sort((a, b) => a.joinedAt - b.joinedAt);
-  const outPlayers = allPlayers.filter(p => !p.active).sort((a, b) => a.joinedAt - b.joinedAt);
+  const active = allPlayers.filter(p => p.active && !p.skip).sort((a, b) => a.joinedAt - b.joinedAt);
+  const withCustomer = allPlayers.filter(p => p.active && p.skip).sort((a, b) => a.joinedAt - b.joinedAt);
+  const out = allPlayers.filter(p => !p.active).sort((a, b) => a.joinedAt - b.joinedAt);
 
-  const next = activePlayers[0];
+  const next = active[0];
 
   nextUpDiv.innerHTML = next
-    ? `<div class="font-bold bg-blue-100 text-blue-700 px-3 py-1 rounded shadow inline-block">Next: <span style="color:${next.color}">${next.name}</span></div>`
+    ? `<div class="font-bold">Next: <span style="color:${next.color}">${next.name}</span></div>`
     : "No one";
 
+  // FLIP Animation — Old Positions
+  const oldPositions = {};
+  document.querySelectorAll(".player").forEach(el => {
+    oldPositions[el.dataset.name] = el.getBoundingClientRect();
+  });
+
+  // Clear queue
   queueDisplay.innerHTML = "";
-  skipQueueDisplay.innerHTML = "";
-  outQueueDisplay.innerHTML = "";
 
-  activePlayers.forEach(p => {
-    const div = document.createElement("div");
-    div.className = "flex items-center justify-between bg-white p-3 rounded shadow player mb-2";
-    div.dataset.name = p.name;
-    div.innerHTML = `
-      <div class="flex items-center gap-2">
-        <span class="inline-block w-4 h-4 rounded-full" style="background-color: ${p.color}"></span>
-        <span>${p.name}</span>
-      </div>
-      <span class="text-xs text-white px-2 py-1 rounded bg-green-600">Active</span>
-    `;
-    queueDisplay.appendChild(div);
+  const section = (title, list, badge) => {
+    if (list.length === 0) return null;
+    const container = document.createElement("div");
+    container.className = "mb-6";
+    container.innerHTML = `<h3 class="text-sm font-semibold mb-2">${title}</h3>`;
+    const listDiv = document.createElement("div");
+    listDiv.className = "space-y-2";
+
+    list.forEach(p => {
+      const div = document.createElement("div");
+      div.className = "flex items-center justify-between bg-white p-3 rounded shadow player";
+      div.dataset.name = p.name;
+      div.innerHTML = `
+        <div class="flex items-center gap-2">
+          <span class="inline-block w-4 h-4 rounded-full" style="background-color: ${p.color}"></span>
+          <span>${p.name}</span>
+        </div>
+        <span class="text-xs text-white px-2 py-1 rounded ${badge}">${title}</span>
+      `;
+      listDiv.appendChild(div);
+    });
+
+    container.appendChild(listDiv);
+    return container;
+  };
+
+  const queueSection = section("Active", active, "bg-green-600");
+  const skipSection = section("With Customer", withCustomer, "bg-yellow-500");
+  const outSection = section("Out of Rotation", out, "bg-red-500");
+
+  if (queueSection) queueDisplay.appendChild(queueSection);
+  if (skipSection) queueDisplay.appendChild(skipSection);
+  if (outSection) queueDisplay.appendChild(outSection);
+
+  // FLIP Animation — New Positions & Animate
+  const newPositions = {};
+  document.querySelectorAll(".player").forEach(el => {
+    newPositions[el.dataset.name] = el.getBoundingClientRect();
   });
 
-  skipPlayers.forEach(p => {
-    const div = document.createElement("div");
-    div.className = "flex items-center gap-2 bg-yellow-50 px-3 py-2 rounded border border-yellow-200 shadow";
-    div.innerHTML = `
-      <span class="inline-block w-3 h-3 rounded-full" style="background-color: ${p.color}"></span>
-      <span>${p.name}</span>
-    `;
-    skipQueueDisplay.appendChild(div);
-  });
-
-  outPlayers.forEach(p => {
-    const div = document.createElement("div");
-    div.className = "flex items-center gap-2 bg-gray-50 px-3 py-2 rounded border border-gray-300 shadow";
-    div.innerHTML = `
-      <span class="inline-block w-3 h-3 rounded-full" style="background-color: ${p.color}"></span>
-      <span>${p.name}</span>
-    `;
-    outQueueDisplay.appendChild(div);
+  document.querySelectorAll(".player").forEach(el => {
+    const name = el.dataset.name;
+    const oldPos = oldPositions[name];
+    const newPos = newPositions[name];
+    if (oldPos && newPos) {
+      const dx = oldPos.left - newPos.left;
+      const dy = oldPos.top - newPos.top;
+      el.style.transform = `translate(${dx}px, ${dy}px)`;
+      el.style.transition = "transform 0s";
+      requestAnimationFrame(() => {
+        el.style.transform = "";
+        el.style.transition = "transform 300ms ease";
+      });
+    }
   });
 }
 
