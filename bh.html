@@ -7,12 +7,6 @@
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
-  <style>
-    .player {
-      transition: transform 0.4s ease, opacity 0.3s ease;
-      will-change: transform, opacity;
-    }
-  </style>
 </head>
 <body class="bg-gray-100 min-h-screen p-4" data-room="BH">
   <div class="max-w-xl mx-auto bg-white p-6 rounded-lg shadow-lg flex flex-col justify-between min-h-[90vh]">
@@ -34,7 +28,7 @@
           <div id="nextUp" class="font-bold text-blue-600"></div>
         </div>
 
-        <div id="queue" class="mb-6">
+        <div id="queue">
           <h2 class="text-md font-semibold mb-2">Player Queue:</h2>
           <div id="activePlayers" class="space-y-1 mb-6"></div>
 
