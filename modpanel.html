@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Who's Up Moderator</title>
+  <title>Moderator Panel</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <style>
     .action-buttons {
@@ -11,35 +11,22 @@
       overflow: hidden;
       transition: max-height 0.3s ease;
     }
-
     .expanded .action-buttons {
       max-height: 200px;
     }
-
     .dragging {
       opacity: 0.5;
       transform: scale(0.98);
       transition: transform 0.2s ease;
     }
-
     .drag-over {
       border: 2px dashed #3b82f6;
       background-color: #eff6ff;
-      transition: background-color 0.2s ease;
-    }
-
-    .ghost-clone {
-      position: absolute;
-      z-index: 9999;
-      pointer-events: none;
-      opacity: 0.6;
-      transform: scale(0.95);
-      transition: transform 0.2s ease;
     }
   </style>
 </head>
 <body class="bg-gray-100 min-h-screen flex items-center justify-center px-4">
-  <!-- Login Section -->
+  <!-- Login -->
   <div id="loginSection" class="text-center w-full max-w-md">
     <h1 class="text-2xl font-bold mb-4">Moderator Login</h1>
     <input type="password" id="adminPassword" placeholder="Enter moderator password"
@@ -49,8 +36,8 @@
     </button>
   </div>
 
-  <!-- Moderator Panel -->
-  <div id="adminPanel" class="hidden w-full max-w-md p-4">
+  <!-- Mod Panel -->
+  <div id="adminPanel" class="hidden w-full max-w-2xl p-4">
     <div class="text-center mb-4">
       <h2 id="roomTitle" class="text-lg font-semibold">Room</h2>
       <p class="text-sm text-gray-500" id="currentNextUp"></p>
@@ -58,12 +45,21 @@
 
     <div class="text-center mb-4">
       <button onclick="toggleReorderMode()" id="reorderToggle"
-        class="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700 hidden">
+        class="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700">
         Enable Reorder Mode
       </button>
     </div>
 
-    <div id="playerList" class="space-y-3 transition-all duration-200"></div>
+    <div>
+      <h2 class="text-md font-semibold mb-2">Active Queue:</h2>
+      <div id="playerList" class="space-y-3 mb-6"></div>
+
+      <h2 class="text-md font-semibold mb-2">With Customer:</h2>
+      <div id="withCustomerList" class="space-y-3 mb-6"></div>
+
+      <h2 class="text-md font-semibold mb-2">Out of Rotation:</h2>
+      <div id="outOfRotationList" class="space-y-3 mb-6"></div>
+    </div>
 
     <div class="mt-6 text-center">
       <a href="index.html" class="text-sm text-blue-600 underline">← Back to Landing Page</a>
