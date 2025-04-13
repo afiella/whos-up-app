@@ -20,13 +20,10 @@ const colorList = ["#2f4156", "#567c8d", "#c8d9e6", "#f5efeb", "#8c5a7f", "#adb3
 const nameButtonsContainer = document.getElementById("nameButtons");
 const nameSelectSection = document.getElementById("nameSelect");
 const mainScreen = document.getElementById("mainScreen");
+const queueDisplay = document.getElementById("queue");
 const joinedMessage = document.getElementById("joinedMessage");
 const nextUpDiv = document.getElementById("nextUp");
 const takenModal = document.getElementById("takenModal");
-
-const activeQueue = document.getElementById("activeQueue");
-const customerQueue = document.getElementById("customerQueue");
-const outQueue = document.getElementById("outQueue");
 
 function renderNameButtons() {
   nameButtonsContainer.innerHTML = "";
@@ -92,67 +89,87 @@ function joinWithName(name, color) {
   });
 }
 
-function createPlayerCard(p) {
-  let badgeColor = "bg-green-600", status = "Active";
-  if (p.skip) {
-    badgeColor = "bg-yellow-500";
-    status = "With Customer";
-  } else if (!p.active) {
-    badgeColor = "bg-red-500";
-    status = "Out of Rotation";
-  }
-
-  const div = document.createElement("div");
-  div.className = "flex items-center justify-between bg-white p-3 rounded shadow player";
-  div.dataset.name = p.name;
-  div.innerHTML = `
-    <div class="flex items-center gap-2">
-      <span class="inline-block w-4 h-4 rounded-full" style="background-color: ${p.color}"></span>
-      <span>${p.name}</span>
-    </div>
-    <span class="text-xs text-white px-2 py-1 rounded ${badgeColor}">${status}</span>
-  `;
-  return div;
-}
-
 function updateDisplay(playersMap) {
-  const players = Object.values(playersMap || {});
-  const activePlayers = players.filter(p => p.active && !p.skip).sort((a, b) => a.joinedAt - b.joinedAt);
-  const customerPlayers = players.filter(p => p.skip).sort((a, b) => a.joinedAt - b.joinedAt);
-  const outPlayers = players.filter(p => !p.active && !p.skip).sort((a, b) => a.joinedAt - b.joinedAt);
-
-  const next = activePlayers[0];
+  const allPlayers = Object.values(playersMap || {});
+  const active = allPlayers.filter(p => p.active && !p.skip).sort((a, b) => a.joinedAt - b.joinedAt);
+  const skip = allPlayers.filter(p => p.skip).sort((a, b) => a.joinedAt - b.joinedAt);
+  const out = allPlayers.filter(p => !p.active && !p.skip).sort((a, b) => a.joinedAt - b.joinedAt);
+  const next = active[0];
 
   nextUpDiv.innerHTML = next
-    ? `<div class="font-bold">Next: <span style="color:${next.color}">${next.name}</span></div>`
-    : "No one";
+    ? `<div class="font-bold text-blue-600">Next: <span style="color:${next.color}">${next.name}</span></div>`
+    : `<div class="font-bold text-blue-600">No one</div>`;
 
-  updateSection(activeQueue, activePlayers);
-  updateSection(customerQueue, customerPlayers);
-  updateSection(outQueue, outPlayers);
+  if (!document.getElementById("activeSection")) {
+    queueDisplay.innerHTML = `
+      <div id="activeSection" class="mb-6">
+        <h2 class="text-md font-semibold mb-2">Player Queue:</h2>
+        <div id="activeQueue" class="space-y-1"></div>
+      </div>
+      <div id="skipSection" class="mb-6">
+        <h2 class="text-md font-semibold mb-2">With Customer:</h2>
+        <div id="skipQueue" class="space-y-1"></div>
+      </div>
+      <div id="outSection">
+        <h2 class="text-md font-semibold mb-2">Out of Rotation:</h2>
+        <div id="outQueue" class="space-y-1"></div>
+      </div>
+    `;
+  }
+
+  renderSection("activeQueue", active);
+  renderSection("skipQueue", skip);
+  renderSection("outQueue", out);
 }
 
-function updateSection(container, players) {
-  const oldChildren = Array.from(container.children);
+function renderSection(containerId, players) {
+  const container = document.getElementById(containerId);
+  if (!container) return;
+
   const oldPositions = {};
-  oldChildren.forEach(el => {
+  Array.from(container.children).forEach(el => {
     oldPositions[el.dataset.name] = el.getBoundingClientRect();
   });
 
   container.innerHTML = "";
   players.forEach(p => {
-    const card = createPlayerCard(p);
-    container.appendChild(card);
+    let badgeColor = "bg-green-600", status = "Active";
+    if (p.skip) {
+      badgeColor = "bg-yellow-500";
+      status = "With Customer";
+    }
+    if (!p.active && !p.skip) {
+      badgeColor = "bg-red-500";
+      status = "Out of Rotation";
+    }
+
+    const div = document.createElement("div");
+    div.className = "flex items-center justify-between bg-white p-3 rounded shadow player";
+    div.dataset.name = p.name;
+    div.innerHTML = `
+      <div class="flex items-center gap-2">
+        <span class="inline-block w-4 h-4 rounded-full" style="background-color: ${p.color}"></span>
+        <span>${p.name}</span>
+      </div>
+      <span class="text-xs text-white px-2 py-1 rounded ${badgeColor}">${status}</span>
+    `;
+
+    container.appendChild(div);
   });
 
-  const newChildren = Array.from(container.children);
-  newChildren.forEach(el => {
+  const newPositions = {};
+  Array.from(container.children).forEach(el => {
     const name = el.dataset.name;
-    const oldPos = oldPositions[name];
-    const newPos = el.getBoundingClientRect();
-    if (oldPos) {
-      const dx = oldPos.left - newPos.left;
-      const dy = oldPos.top - newPos.top;
+    newPositions[name] = el.getBoundingClientRect();
+  });
+
+  Array.from(container.children).forEach(el => {
+    const name = el.dataset.name;
+    const old = oldPositions[name];
+    const now = newPositions[name];
+    if (old && now) {
+      const dx = old.left - now.left;
+      const dy = old.top - now.top;
       el.style.transform = `translate(${dx}px, ${dy}px)`;
       el.style.transition = "transform 0s";
       requestAnimationFrame(() => {
