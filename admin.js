@@ -1,75 +1,118 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Admin Panel</title>
-  <script src="https://cdn.tailwindcss.com"></script>
-  <style>
-    .player-card {
-      transition: all 0.3s ease-in-out;
-    }
-    .dragging {
-      opacity: 0.5;
-    }
-    .drag-over {
-      border: 2px dashed #3b82f6;
-      background-color: #eff6ff;
-    }
-    .floating-header {
-      position: sticky;
-      top: 0;
-      z-index: 10;
-      background-color: #f8fafc;
-      padding: 0.5rem 1rem;
-    }
-  </style>
-</head>
-<body class="bg-gray-100 min-h-screen p-4">
-  <div class="max-w-3xl mx-auto">
-    <div class="text-center mb-6">
-      <h1 class="text-2xl font-bold">Admin Control Panel</h1>
-      <div class="mt-2">
-        <button onclick="switchRoom('BH')" class="bg-blue-600 text-white px-4 py-2 rounded mr-2">View BH</button>
-        <button onclick="switchRoom('59')" class="bg-purple-600 text-white px-4 py-2 rounded">View 59</button>
+import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-app.js";
+import {
+  getDatabase,
+  ref,
+  onValue,
+  update,
+  remove,
+  set
+} from "https://www.gstatic.com/firebasejs/11.6.0/firebase-database.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyDkEKUzUhc-nKFLnF1w0MOm6qwpKHTpfaI",
+  authDomain: "who-s-up-app.firebaseapp.com",
+  databaseURL: "https://who-s-up-app-default-rtdb.firebaseio.com",
+  projectId: "who-s-up-app",
+  storageBucket: "who-s-up-app.appspot.com",
+  messagingSenderId: "167292375113",
+  appId: "1:167292375113:web:ce718a1aab4852fe5daf98"
+};
+
+const app = initializeApp(firebaseConfig);
+const db = getDatabase(app);
+
+let currentRoom = "BH";
+let reorderMode = false;
+let latestSnapshot = {};
+
+const roomTitle = document.getElementById("roomTitle");
+const currentNextUp = document.getElementById("currentNextUp");
+const reorderToggle = document.getElementById("reorderToggle");
+
+function switchRoom(room) {
+  currentRoom = room;
+  roomTitle.textContent = `Room: ${currentRoom}`;
+  listenToRoom();
+}
+
+function listenToRoom() {
+  const playersRef = ref(db, `rooms/${currentRoom}/players`);
+  onValue(playersRef, (snapshot) => {
+    latestSnapshot = snapshot.val() || {};
+    displayPlayers(latestSnapshot);
+  });
+}
+
+function displayPlayers(data) {
+  const entries = Object.entries(data).sort((a, b) => a[1].joinedAt - b[1].joinedAt);
+
+  const active = entries.filter(([_, p]) => p.active && !p.skip);
+  const skip = entries.filter(([_, p]) => p.active && p.skip);
+  const out = entries.filter(([_, p]) => !p.active);
+
+  const currentUp = active[0]?.[0];
+  currentNextUp.textContent = currentUp ? `Next Up: ${currentUp}` : "";
+
+  document.getElementById("activePlayers").innerHTML = "";
+  document.getElementById("skipPlayers").innerHTML = "";
+  document.getElementById("outPlayers").innerHTML = "";
+
+  renderGroup(active, "activePlayers", "bg-green-500", "Active");
+  renderGroup(skip, "skipPlayers", "bg-yellow-500", "With Customer");
+  renderGroup(out, "outPlayers", "bg-red-500", "Out");
+}
+
+function renderGroup(entries, containerId, badge, label) {
+  const container = document.getElementById(containerId);
+
+  entries.forEach(([key, player]) => {
+    const div = document.createElement("div");
+    div.className = "bg-white rounded shadow px-4 py-3";
+    div.dataset.key = key;
+
+    div.innerHTML = `
+      <div class="flex items-center justify-between">
+        <div class="flex items-center gap-2">
+          <span class="w-4 h-4 rounded-full" style="background-color: ${player.color}"></span>
+          <span class="font-semibold text-base">${player.name}</span>
+        </div>
+        <span class="text-sm text-white px-2 py-1 rounded ${badge}">${label}</span>
       </div>
-      <p class="text-sm mt-2 text-gray-600" id="roomTitle">Room: </p>
-      <p class="text-sm text-blue-600" id="currentNextUp"></p>
-    </div>
+      <div class="action-buttons mt-3 space-y-2">
+        <div class="flex justify-between">
+          <button onclick="setStatus('${key}', 'active')" class="bg-green-500 text-white px-2 py-1 rounded text-sm w-full mr-1">In</button>
+          <button onclick="setStatus('${key}', 'skip')" class="bg-yellow-500 text-white px-2 py-1 rounded text-sm w-full mx-1">With Customer</button>
+          <button onclick="setStatus('${key}', 'inactive')" class="bg-gray-500 text-white px-2 py-1 rounded text-sm w-full ml-1">Out</button>
+        </div>
+        <div class="text-center">
+          <button onclick="removePlayer('${key}')" class="text-red-600 text-sm font-bold">✕ Remove</button>
+        </div>
+      </div>
+    `;
 
-    <div class="text-center mb-4">
-      <button onclick="toggleReorderMode()" id="reorderToggle" class="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700">
-        Enable Reorder Mode
-      </button>
-    </div>
+    div.querySelector("div").addEventListener("click", () => {
+      div.classList.toggle("expanded");
+    });
 
-    <!-- Sections -->
-    <div id="activeSection" class="mb-8">
-      <h2 class="floating-header text-green-700 text-lg font-semibold mb-2">Active Players</h2>
-      <div id="activePlayers" class="space-y-2"></div>
-    </div>
+    container.appendChild(div);
+  });
+}
 
-    <div id="skipSection" class="mb-8">
-      <h2 class="floating-header text-yellow-600 text-lg font-semibold mb-2">With Customer</h2>
-      <div id="skipPlayers" class="space-y-2"></div>
-    </div>
+window.setStatus = function (key, status) {
+  const updates = status === "active"
+    ? { active: true, skip: false, joinedAt: Date.now() }
+    : status === "skip"
+    ? { active: true, skip: true, joinedAt: Date.now() }
+    : { active: false, skip: false };
 
-    <div id="outSection" class="mb-8">
-      <h2 class="floating-header text-red-600 text-lg font-semibold mb-2">Out of Rotation</h2>
-      <div id="outPlayers" class="space-y-2"></div>
-    </div>
+  update(ref(db, `rooms/${currentRoom}/players/${key}`), updates);
+};
 
-    <div class="text-center">
-      <button onclick="resetAllPlayers()" class="bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700">
-        Reset All Players
-      </button>
-    </div>
+window.removePlayer = function (key) {
+  remove(ref(db, `rooms/${currentRoom}/players/${key}`));
+};
 
-    <div class="mt-6 text-center">
-      <a href="index.html" class="text-sm text-blue-600 underline">← Back to Landing Page</a>
-    </div>
-  </div>
-
-  <script type="module" src="admin.js"></script>
-</body>
-</html>
+window.toggleReorderMode = function () {
+  reorderMode = !reorderMode;
+  reorderToggle.textContent = reorderMode ? "Finish Reordering" : "Enable Reorder Mode";
+  displayPlayers
