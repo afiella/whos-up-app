@@ -91,60 +91,27 @@ function joinWithName(name, color) {
 
 function updateDisplay(playersMap) {
   const allPlayers = Object.values(playersMap || {});
-  const active = allPlayers.filter(p => p.active && !p.skip).sort((a, b) => a.joinedAt - b.joinedAt);
-  const skip = allPlayers.filter(p => p.skip).sort((a, b) => a.joinedAt - b.joinedAt);
-  const out = allPlayers.filter(p => !p.active && !p.skip).sort((a, b) => a.joinedAt - b.joinedAt);
-  const next = active[0];
+  const activePlayers = allPlayers.filter(p => p.active && !p.skip).sort((a, b) => a.joinedAt - b.joinedAt);
+  const skipPlayers = allPlayers.filter(p => p.active && p.skip).sort((a, b) => a.joinedAt - b.joinedAt);
+  const outPlayers = allPlayers.filter(p => !p.active).sort((a, b) => a.joinedAt - b.joinedAt);
+  const next = activePlayers[0];
 
   nextUpDiv.innerHTML = next
     ? `<div class="font-bold text-blue-600">Next: <span style="color:${next.color}">${next.name}</span></div>`
     : `<div class="font-bold text-blue-600">No one</div>`;
 
-  if (!document.getElementById("activeSection")) {
-    queueDisplay.innerHTML = `
-      <div id="activeSection" class="mb-6">
-        <h2 class="text-md font-semibold mb-2">Player Queue:</h2>
-        <div id="activeQueue" class="space-y-1"></div>
-      </div>
-      <div id="skipSection" class="mb-6">
-        <h2 class="text-md font-semibold mb-2">With Customer:</h2>
-        <div id="skipQueue" class="space-y-1"></div>
-      </div>
-      <div id="outSection">
-        <h2 class="text-md font-semibold mb-2">Out of Rotation:</h2>
-        <div id="outQueue" class="space-y-1"></div>
-      </div>
-    `;
-  }
+  queueDisplay.innerHTML = `
+    <h2 class="text-md font-semibold mb-2">Player Queue:</h2>
+    <div id="activePlayers" class="space-y-1 mb-6"></div>
+    <h2 class="text-md font-semibold mb-2">With Customer:</h2>
+    <div id="skipPlayers" class="space-y-1 mb-6"></div>
+    <h2 class="text-md font-semibold mb-2">Out of Rotation:</h2>
+    <div id="outPlayers" class="space-y-1 mb-6"></div>
+  `;
 
-  renderSection("activeQueue", active);
-  renderSection("skipQueue", skip);
-  renderSection("outQueue", out);
-}
-
-function renderSection(containerId, players) {
-  const container = document.getElementById(containerId);
-  if (!container) return;
-
-  const oldPositions = {};
-  Array.from(container.children).forEach(el => {
-    oldPositions[el.dataset.name] = el.getBoundingClientRect();
-  });
-
-  container.innerHTML = "";
-  players.forEach(p => {
-    let badgeColor = "bg-green-600", status = "Active";
-    if (p.skip) {
-      badgeColor = "bg-yellow-500";
-      status = "With Customer";
-    }
-    if (!p.active && !p.skip) {
-      badgeColor = "bg-red-500";
-      status = "Out of Rotation";
-    }
-
+  const renderCard = (p, badgeColor, status) => {
     const div = document.createElement("div");
-    div.className = "flex items-center justify-between bg-white p-3 rounded shadow player";
+    div.className = "flex items-center justify-between bg-white p-3 rounded shadow player transition-all duration-300 ease-in-out";
     div.dataset.name = p.name;
     div.innerHTML = `
       <div class="flex items-center gap-2">
@@ -153,30 +120,19 @@ function renderSection(containerId, players) {
       </div>
       <span class="text-xs text-white px-2 py-1 rounded ${badgeColor}">${status}</span>
     `;
+    return div;
+  };
 
-    container.appendChild(div);
+  activePlayers.forEach(p => {
+    document.getElementById("activePlayers").appendChild(renderCard(p, "bg-green-600", "Active"));
   });
 
-  const newPositions = {};
-  Array.from(container.children).forEach(el => {
-    const name = el.dataset.name;
-    newPositions[name] = el.getBoundingClientRect();
+  skipPlayers.forEach(p => {
+    document.getElementById("skipPlayers").appendChild(renderCard(p, "bg-yellow-500", "With Customer"));
   });
 
-  Array.from(container.children).forEach(el => {
-    const name = el.dataset.name;
-    const old = oldPositions[name];
-    const now = newPositions[name];
-    if (old && now) {
-      const dx = old.left - now.left;
-      const dy = old.top - now.top;
-      el.style.transform = `translate(${dx}px, ${dy}px)`;
-      el.style.transition = "transform 0s";
-      requestAnimationFrame(() => {
-        el.style.transform = "";
-        el.style.transition = "transform 300ms ease";
-      });
-    }
+  outPlayers.forEach(p => {
+    document.getElementById("outPlayers").appendChild(renderCard(p, "bg-red-500", "Out of Rotation"));
   });
 }
 
