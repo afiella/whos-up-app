@@ -20,13 +20,12 @@ const colorList = ["#2f4156", "#567c8d", "#c8d9e6", "#f5efeb", "#8c5a7f", "#adb3
 const nameButtonsContainer = document.getElementById("nameButtons");
 const nameSelectSection = document.getElementById("nameSelect");
 const mainScreen = document.getElementById("mainScreen");
+const queueActive = document.getElementById("queueActive");
+const queueWithCustomer = document.getElementById("queueWithCustomer");
+const queueOut = document.getElementById("queueOut");
 const joinedMessage = document.getElementById("joinedMessage");
 const nextUpDiv = document.getElementById("nextUp");
 const takenModal = document.getElementById("takenModal");
-
-const queueDisplay = document.getElementById("queue");
-const skipDisplay = document.getElementById("withCustomer");
-const outDisplay = document.getElementById("outOfRotation");
 
 function renderNameButtons() {
   nameButtonsContainer.innerHTML = "";
@@ -93,81 +92,53 @@ function joinWithName(name, color) {
 }
 
 function updateDisplay(playersMap) {
-  const players = Object.values(playersMap || {});
-  const active = players.filter(p => p.active && !p.skip).sort((a, b) => a.joinedAt - b.joinedAt);
-  const skip = players.filter(p => p.skip);
-  const out = players.filter(p => !p.active && !p.skip);
+  const all = Object.values(playersMap || {});
+  const active = all.filter(p => p.active && !p.skip).sort((a, b) => a.joinedAt - b.joinedAt);
+  const skip = all.filter(p => p.active && p.skip).sort((a, b) => a.joinedAt - b.joinedAt);
+  const out = all.filter(p => !p.active).sort((a, b) => a.joinedAt - b.joinedAt);
 
   const next = active[0];
   nextUpDiv.innerHTML = next
-    ? `<div class="font-bold">Next: <span style="color:${next.color}">${next.name}</span></div>`
-    : "No one";
+    ? `<div class="font-bold text-sm">Next: <span style="color:${next.color}">${next.name}</span></div>`
+    : "";
 
-  renderGroup(queueDisplay, active, "Active");
-  renderGroup(skipDisplay, skip, "With Customer");
-  renderGroup(outDisplay, out, "Out");
-}
+  [queueActive, queueWithCustomer, queueOut].forEach(q => q.innerHTML = "");
 
-function renderGroup(container, group, statusLabel) {
-  const oldElements = Array.from(container.children).reduce((map, el) => {
-    map[el.dataset.name] = el.getBoundingClientRect();
-    return map;
-  }, {});
-
-  container.innerHTML = "";
-
-  group.forEach(p => {
-    let badgeColor = "bg-green-600";
-    if (statusLabel === "With Customer") badgeColor = "bg-yellow-500";
-    if (statusLabel === "Out") badgeColor = "bg-red-500";
+  function createCard(p) {
+    let badgeColor = "bg-green-600", label = "Active";
+    if (p.skip) {
+      badgeColor = "bg-yellow-500"; label = "With Customer";
+    } else if (!p.active) {
+      badgeColor = "bg-red-500"; label = "Out";
+    }
 
     const div = document.createElement("div");
-    div.className = "player flex items-center justify-between bg-white p-3 rounded shadow mb-2";
+    div.className = "flex items-center justify-between bg-white p-3 rounded shadow transition-transform duration-300 player";
     div.dataset.name = p.name;
     div.innerHTML = `
       <div class="flex items-center gap-2">
-        <span class="inline-block w-4 h-4 rounded-full" style="background-color:${p.color}"></span>
-        <span class="font-medium">${p.name}</span>
+        <span class="inline-block w-4 h-4 rounded-full" style="background-color: ${p.color}"></span>
+        <span>${p.name}</span>
       </div>
-      <span class="text-xs text-white px-2 py-1 rounded ${badgeColor}">${statusLabel}</span>
+      <span class="text-xs text-white px-2 py-1 rounded ${badgeColor}">${label}</span>
     `;
-    container.appendChild(div);
-  });
+    return div;
+  }
 
-  const newElements = Array.from(container.children).reduce((map, el) => {
-    map[el.dataset.name] = el.getBoundingClientRect();
-    return map;
-  }, {});
-
-  Array.from(container.children).forEach(el => {
-    const name = el.dataset.name;
-    const oldRect = oldElements[name];
-    const newRect = newElements[name];
-    if (oldRect) {
-      const dx = oldRect.left - newRect.left;
-      const dy = oldRect.top - newRect.top;
-      el.style.transform = `translate(${dx}px, ${dy}px)`;
-      el.style.transition = "transform 0s";
-      requestAnimationFrame(() => {
-        el.style.transform = "";
-        el.style.transition = "transform 300ms ease";
-      });
-    }
-  });
+  active.forEach(p => queueActive.appendChild(createCard(p)));
+  skip.forEach(p => queueWithCustomer.appendChild(createCard(p)));
+  out.forEach(p => queueOut.appendChild(createCard(p)));
 }
 
 function setStatus(type) {
   if (!currentUser) return;
   const userRef = db.ref(`rooms/${currentRoom}/players/${currentUser.name}`);
-  if (type === "active" || type === "skip") {
-    userRef.update({
-      active: true,
-      skip: type === "skip",
-      joinedAt: Date.now()
-    });
-  } else if (type === "inactive") {
-    userRef.update({ active: false, skip: false });
-  }
+  const updates = {
+    active: type !== "inactive",
+    skip: type === "skip",
+    joinedAt: Date.now()
+  };
+  userRef.update(updates);
 }
 
 function leaveGame() {
@@ -177,12 +148,21 @@ function leaveGame() {
   window.location.href = "index.html";
 }
 
+db.ref(`rooms/${currentRoom}/players`).on("child_removed", snapshot => {
+  const removedName = snapshot.key;
+  const stored = JSON.parse(localStorage.getItem("currentUser") || "{}");
+  if (stored.name === removedName && stored.room === currentRoom) {
+    localStorage.removeItem("currentUser");
+    localStorage.removeItem("roomOverride");
+    window.location.href = "index.html";
+  }
+});
+
 window.addEventListener("load", () => {
   const savedUser = JSON.parse(localStorage.getItem("currentUser"));
   if (savedUser && savedUser.name && savedUser.color && savedUser.room) {
     currentUser = savedUser;
     currentRoom = savedUser.room;
-
     nameSelectSection.classList.add("hidden");
     mainScreen.classList.remove("hidden");
     joinedMessage.textContent = `Welcome back, ${currentUser.name}!`;
