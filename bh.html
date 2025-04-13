@@ -28,21 +28,31 @@
           <div id="nextUp" class="font-bold text-blue-600"></div>
         </div>
 
-        <div id="queue">
-          <div class="mb-6">
-            <h2 class="text-lg font-semibold text-green-700 mb-2">Player Queue:</h2>
-            <div id="activePlayers" class="space-y-1"></div>
-          </div>
-          <div class="mb-6">
-            <h2 class="text-lg font-semibold text-yellow-600 mb-2">With a Customer:</h2>
-            <div id="skipPlayers" class="space-y-1"></div>
-          </div>
-          <div class="mb-6">
-            <h2 class="text-lg font-semibold text-red-600 mb-2">Out of Rotation:</h2>
-            <div id="outPlayers" class="space-y-1"></div>
-          </div>
-        </div>
-      </div>
+        <div id="queue" class="space-y-8">
+  <!-- Active Players -->
+  <div class="relative">
+    <div class="sticky top-0 z-10 bg-green-100 text-green-800 font-semibold px-3 py-1 rounded shadow mb-2 w-fit">
+      Active
+    </div>
+    <div id="activePlayers" class="space-y-2"></div>
+  </div>
+
+  <!-- With Customer -->
+  <div class="relative">
+    <div class="sticky top-0 z-10 bg-yellow-100 text-yellow-800 font-semibold px-3 py-1 rounded shadow mb-2 w-fit">
+      With Customer
+    </div>
+    <div id="skipPlayers" class="space-y-2"></div>
+  </div>
+
+  <!-- Out of Rotation -->
+  <div class="relative">
+    <div class="sticky top-0 z-10 bg-red-100 text-red-800 font-semibold px-3 py-1 rounded shadow mb-2 w-fit">
+      Out of Rotation
+    </div>
+    <div id="outPlayers" class="space-y-2"></div>
+  </div>
+</div>
 
       <!-- Bottom Action Buttons -->
       <div class="mt-6 pt-6 border-t border-gray-200">
