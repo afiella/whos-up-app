@@ -26,12 +26,13 @@ const app = initializeApp(firebaseConfig);
 const db = getDatabase(app);
 
 // Global state
-let currentRoom = "BH";
+let currentRoom = "BH";  // Default is BH; change to "59" if you want 59 by default
 let reorderMode = false;
 let latestSnapshot = {};
 
 // DOM references
-const loginForm     = document.getElementById("loginForm");
+const loginForm     = document.getElementById("loginForm");         // outer div
+const loginFormInner= document.getElementById("loginFormInner");    // actual <form>
 const adminUI       = document.getElementById("adminUI");
 const usernameEl    = document.getElementById("username");
 const passwordEl    = document.getElementById("password");
@@ -41,7 +42,7 @@ const playerList    = document.getElementById("playerList");
 const reorderToggle = document.getElementById("reorderToggle");
 
 // --- LOGIN LOGIC ---
-window.login = function() {
+function login() {
   const username = usernameEl.value.trim();
   const password = passwordEl.value.trim();
 
@@ -60,15 +61,21 @@ window.login = function() {
 
   // Start listening to the default room
   switchRoom(currentRoom);
-};
+}
 
-// Pressing ENTER inside username/password triggers login
+// Use a "submit" event on the <form> so Enter triggers it automatically
+loginFormInner.addEventListener("submit", (e) => {
+  e.preventDefault();
+  login();
+});
+
+// Also if you want keydown logic (not strictly required now that we handle form submit):
 document.addEventListener("keydown", (e) => {
   if (e.key === "Enter") {
-    const activeElement = document.activeElement;
-    if (activeElement === usernameEl || activeElement === passwordEl) {
+    // If focused on an input in the login form, we can call login() or let form submit do its job
+    if (document.activeElement === usernameEl || document.activeElement === passwordEl) {
       e.preventDefault();
-      window.login();
+      login();
     }
   }
 });
