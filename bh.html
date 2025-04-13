@@ -3,12 +3,12 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>BH Room</title>
+  <title>59 Room</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
 </head>
-<body class="bg-gray-100 min-h-screen p-4" data-room="BH">
+<body class="bg-gray-100 min-h-screen p-4" data-room="59">
   <div class="max-w-xl mx-auto bg-white p-6 rounded-lg shadow-lg flex flex-col justify-between min-h-[90vh]">
 
     <!-- Name Select Section -->
@@ -28,24 +28,23 @@
           <div id="nextUp" class="font-bold text-blue-600"></div>
         </div>
 
-        <div id="queue" class="space-y-6">
+        <div id="queue">
+          <div class="mb-6">
+            <h2 class="text-lg font-semibold text-green-700 mb-2">Player Queue:</h2>
+            <div id="activePlayers" class="space-y-1"></div>
+          </div>
 
-  <div>
-    <h2 class="text-lg font-semibold text-green-700">Active Players</h2>
-    <div id="activePlayers" class="space-y-1 transition-all duration-300"></div>
-  </div>
+          <div class="mb-6">
+            <h2 class="text-lg font-semibold text-yellow-600 mb-2">With a Customer:</h2>
+            <div id="skipPlayers" class="space-y-1"></div>
+          </div>
 
-  <div>
-    <h2 class="text-lg font-semibold text-yellow-600">With Customer</h2>
-    <div id="skipPlayers" class="space-y-1 transition-all duration-300"></div>
-  </div>
-
-  <div>
-    <h2 class="text-lg font-semibold text-red-600">Out of Rotation</h2>
-    <div id="outPlayers" class="space-y-1 transition-all duration-300"></div>
-  </div>
-
-</div>
+          <div class="mb-6">
+            <h2 class="text-lg font-semibold text-red-600 mb-2">Out of Rotation:</h2>
+            <div id="outPlayers" class="space-y-1"></div>
+          </div>
+        </div>
+      </div>
 
       <!-- Bottom Action Buttons -->
       <div class="mt-6 pt-6 border-t border-gray-200">
