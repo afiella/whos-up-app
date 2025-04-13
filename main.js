@@ -20,7 +20,6 @@ const colorList = ["#2f4156", "#567c8d", "#c8d9e6", "#f5efeb", "#8c5a7f", "#adb3
 const nameButtonsContainer = document.getElementById("nameButtons");
 const nameSelectSection = document.getElementById("nameSelect");
 const mainScreen = document.getElementById("mainScreen");
-const queueDisplay = document.getElementById("queue");
 const joinedMessage = document.getElementById("joinedMessage");
 const nextUpDiv = document.getElementById("nextUp");
 const takenModal = document.getElementById("takenModal");
@@ -100,12 +99,9 @@ function updateDisplay(playersMap) {
     ? `<div class="font-bold text-blue-600">Next: <span style="color:${next.color}">${next.name}</span></div>`
     : `<div class="font-bold text-blue-600">No one</div>`;
 
-  // Replace sections with styled groups (with background colors)
-  queueDisplay.innerHTML = `
-    <div id="activePlayers" class="space-y-1 mb-6 bg-green-50 p-2 rounded-lg"></div>
-    <div id="skipPlayers" class="space-y-1 mb-6 bg-yellow-50 p-2 rounded-lg"></div>
-    <div id="outPlayers" class="space-y-1 mb-6 bg-red-50 p-2 rounded-lg"></div>
-  `;
+  document.getElementById("activePlayers").innerHTML = "";
+  document.getElementById("skipPlayers").innerHTML = "";
+  document.getElementById("outPlayers").innerHTML = "";
 
   renderGroup(activePlayers, "activePlayers", "bg-green-600", "Active");
   renderGroup(skipPlayers, "skipPlayers", "bg-yellow-500", "With Customer");
