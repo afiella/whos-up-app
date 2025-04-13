@@ -23,22 +23,11 @@ const currentNextUp = document.getElementById("currentNextUp");
 const playerList = document.getElementById("playerList");
 const reorderToggle = document.getElementById("reorderToggle");
 
-window.switchRoom = function (room) {
+function switchRoom(room) {
   currentRoom = room;
-  roomTitle.textContent = `Room: ${currentRoom}`;
+  roomTitle.textContent = `Room: ${room}`;
   listenToRoom();
-};
-
-window.toggleReorderMode = function () {
-  reorderMode = !reorderMode;
-  reorderToggle.textContent = reorderMode ? "Finish Reordering" : "Enable Reorder Mode";
-  displayPlayers(latestSnapshot);
-};
-
-window.resetAllPlayers = function () {
-  set(ref(db, `rooms/BH/players`), {});
-  set(ref(db, `rooms/59/players`), {});
-};
+}
 
 function listenToRoom() {
   const playersRef = ref(db, `rooms/${currentRoom}/players`);
@@ -50,46 +39,48 @@ function listenToRoom() {
 
 function displayPlayers(data) {
   const entries = Object.entries(data).sort((a, b) => a[1].joinedAt - b[1].joinedAt);
-  const activePlayers = entries.filter(([_, p]) => p.active && !p.skip);
-  const skipPlayers = entries.filter(([_, p]) => p.active && p.skip);
-  const outPlayers = entries.filter(([_, p]) => !p.active);
-
-  const currentUp = activePlayers[0]?.[0];
+  const active = entries.filter(([_, p]) => p.active && !p.skip);
+  const skip = entries.filter(([_, p]) => p.active && p.skip);
+  const out = entries.filter(([_, p]) => !p.active);
+  const currentUp = active[0]?.[0];
   currentNextUp.textContent = currentUp ? `Next Up: ${currentUp}` : "";
 
-  playerList.innerHTML = "";
+  playerList.innerHTML = `
+    <div>
+      <h2 class="text-green-700 font-semibold mb-2">Active</h2>
+      <div id="activeList" class="space-y-2 mb-4"></div>
+      <h2 class="text-yellow-600 font-semibold mb-2">With Customer</h2>
+      <div id="skipList" class="space-y-2 mb-4"></div>
+      <h2 class="text-red-600 font-semibold mb-2">Out of Rotation</h2>
+      <div id="outList" class="space-y-2"></div>
+    </div>
+  `;
 
-  renderGroup("Active Players", activePlayers, "bg-green-600", "Active");
-  renderGroup("With Customer", skipPlayers, "bg-yellow-500", "With Customer");
-  renderGroup("Out of Rotation", outPlayers, "bg-red-500", "Out of Rotation");
+  renderGroup("activeList", active, "bg-green-500", "In");
+  renderGroup("skipList", skip, "bg-yellow-500", "With Customer");
+  renderGroup("outList", out, "bg-red-500", "Out");
 }
 
-function renderGroup(header, group, badgeColor, statusLabel) {
-  const section = document.createElement("div");
-  const title = document.createElement("h3");
-  title.className = "font-bold text-md mb-2";
-  title.textContent = header;
-  section.appendChild(title);
-
+function renderGroup(containerId, group, badge, label) {
+  const container = document.getElementById(containerId);
   group.forEach(([key, player]) => {
     const div = document.createElement("div");
     div.className = "bg-white rounded shadow px-4 py-3 draggable";
-    div.setAttribute("draggable", reorderMode);
     div.dataset.key = key;
 
     div.innerHTML = `
-      <div class="flex items-center justify-between cursor-pointer player-header">
+      <div class="flex items-center justify-between cursor-pointer">
         <div class="flex items-center gap-2">
           <span class="w-4 h-4 rounded-full" style="background-color: ${player.color}"></span>
-          <span class="font-semibold text-lg">${player.name}</span>
+          <span class="font-semibold text-base">${player.name}</span>
         </div>
-        <span class="text-sm text-white px-2 py-1 rounded ${badgeColor}">${statusLabel}</span>
+        <span class="text-sm text-white px-2 py-1 rounded ${badge}">${label}</span>
       </div>
-      <div class="action-buttons mt-3 space-y-2">
+      <div class="mt-3 space-y-2">
         <div class="flex justify-between">
-          <button onclick="setStatus('${key}', 'active')" class="bg-green-600 text-white px-2 py-1 rounded text-sm w-full mr-1">In</button>
+          <button onclick="setStatus('${key}', 'active')" class="bg-green-500 text-white px-2 py-1 rounded text-sm w-full mr-1">In</button>
           <button onclick="setStatus('${key}', 'skip')" class="bg-yellow-500 text-white px-2 py-1 rounded text-sm w-full mx-1">With Customer</button>
-          <button onclick="setStatus('${key}', 'inactive')" class="bg-red-500 text-white px-2 py-1 rounded text-sm w-full ml-1">Out</button>
+          <button onclick="setStatus('${key}', 'inactive')" class="bg-gray-500 text-white px-2 py-1 rounded text-sm w-full ml-1">Out</button>
         </div>
         <div class="text-center">
           <button onclick="removePlayer('${key}')" class="text-red-600 text-sm font-bold">✕ Remove</button>
@@ -97,14 +88,8 @@ function renderGroup(header, group, badgeColor, statusLabel) {
       </div>
     `;
 
-    div.querySelector(".player-header").addEventListener("click", () => {
-      div.classList.toggle("expanded");
-    });
-
-    section.appendChild(div);
+    container.appendChild(div);
   });
-
-  playerList.appendChild(section);
 }
 
 window.setStatus = function (key, status) {
@@ -119,3 +104,14 @@ window.setStatus = function (key, status) {
 window.removePlayer = function (key) {
   remove(ref(db, `rooms/${currentRoom}/players/${key}`));
 };
+
+window.toggleReorderMode = function () {
+  reorderMode = !reorderMode;
+  reorderToggle.textContent = reorderMode ? "Finish Reordering" : "Enable Reorder Mode";
+  displayPlayers(latestSnapshot);
+};
+
+window.switchRoom = switchRoom;
+
+// Start with BH room
+switchRoom("BH");
