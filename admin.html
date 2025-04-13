@@ -3,10 +3,8 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>ADMIN</title>
-  <!-- Tailwind CSS -->
+  <title>Admin</title>
   <script src="https://cdn.tailwindcss.com"></script>
-
   <style>
     .action-buttons {
       max-height: 0;
@@ -30,34 +28,36 @@
   </style>
 </head>
 <body class="bg-gray-100 min-h-screen p-4">
-
   <!-- LOGIN FORM -->
   <div id="loginForm" class="max-w-md mx-auto bg-white rounded p-4 shadow mb-6">
     <h2 class="text-xl font-semibold mb-4 text-center">Admin Login</h2>
-    <div class="mb-4">
-      <label for="username" class="block text-sm font-medium mb-1">Username</label>
-      <input
-        type="text"
-        id="username"
-        class="w-full border border-gray-300 rounded px-3 py-2"
-        placeholder="Enter username"
-      />
-    </div>
-    <div class="mb-4">
-      <label for="password" class="block text-sm font-medium mb-1">Password</label>
-      <input
-        type="password"
-        id="password"
-        class="w-full border border-gray-300 rounded px-3 py-2"
-        placeholder="Enter password"
-      />
-    </div>
-    <button
-      onclick="login()"
-      class="bg-blue-600 text-white px-4 py-2 rounded w-full hover:bg-blue-700"
-    >
-      Login
-    </button>
+    <!-- Wrap the fields in an actual <form> so Enter triggers submit -->
+    <form id="loginFormInner">
+      <div class="mb-4">
+        <label for="username" class="block text-sm font-medium mb-1">Username</label>
+        <input
+          type="text"
+          id="username"
+          class="w-full border border-gray-300 rounded px-3 py-2"
+          placeholder="Enter username"
+        />
+      </div>
+      <div class="mb-4">
+        <label for="password" class="block text-sm font-medium mb-1">Password</label>
+        <input
+          type="password"
+          id="password"
+          class="w-full border border-gray-300 rounded px-3 py-2"
+          placeholder="Enter password"
+        />
+      </div>
+      <button
+        type="submit"
+        class="bg-blue-600 text-white px-4 py-2 rounded w-full hover:bg-blue-700"
+      >
+        Login
+      </button>
+    </form>
   </div>
 
   <!-- ADMIN UI (HIDDEN UNTIL LOGGED IN) -->
@@ -104,7 +104,7 @@
     </div>
   </div>
 
-  <!-- Link to your separate admin.js file -->
+  <!-- Your admin.js file -->
   <script type="module" src="admin.js"></script>
 </body>
 </html>
