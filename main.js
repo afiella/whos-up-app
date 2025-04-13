@@ -93,17 +93,18 @@ function updateDisplay(playersMap) {
   const activePlayers = allPlayers.filter(p => p.active && !p.skip).sort((a, b) => a.joinedAt - b.joinedAt);
   const skipPlayers = allPlayers.filter(p => p.active && p.skip).sort((a, b) => a.joinedAt - b.joinedAt);
   const outPlayers = allPlayers.filter(p => !p.active).sort((a, b) => a.joinedAt - b.joinedAt);
-  const next = activePlayers[0];
 
+  const next = activePlayers[0];
   nextUpDiv.innerHTML = next
     ? `<div class="font-bold text-blue-600">Next: <span style="color:${next.color}">${next.name}</span></div>`
     : `<div class="font-bold text-blue-600">No one</div>`;
 
-  // Clear existing player groups (but keep headers intact)
+  // Clear existing sections
   document.getElementById("activePlayers").innerHTML = "";
   document.getElementById("skipPlayers").innerHTML = "";
   document.getElementById("outPlayers").innerHTML = "";
 
+  // Render players into the correct section
   renderGroup(activePlayers, "activePlayers", "bg-green-600", "Active");
   renderGroup(skipPlayers, "skipPlayers", "bg-yellow-500", "With Customer");
   renderGroup(outPlayers, "outPlayers", "bg-red-500", "Out of Rotation");
