@@ -22,7 +22,6 @@ const nameSelectSection = document.getElementById("nameSelect");
 const mainScreen = document.getElementById("mainScreen");
 const joinedMessage = document.getElementById("joinedMessage");
 const nextUpDiv = document.getElementById("nextUp");
-const takenModal = document.getElementById("takenModal");
 
 function renderNameButtons() {
   nameButtonsContainer.innerHTML = "";
@@ -61,6 +60,7 @@ function attemptJoin(name, color) {
   const userRef = db.ref(`rooms/${currentRoom}/players/${name}`);
   userRef.once("value", (snapshot) => {
     if (snapshot.exists()) {
+      const takenModal = document.getElementById("takenModal");
       if (takenModal) takenModal.classList.remove("hidden");
     } else {
       joinWithName(name, color);
@@ -69,6 +69,7 @@ function attemptJoin(name, color) {
 }
 
 function closeModal() {
+  const takenModal = document.getElementById("takenModal");
   if (takenModal) takenModal.classList.add("hidden");
 }
 
@@ -99,12 +100,10 @@ function updateDisplay(playersMap) {
     ? `<div class="font-bold text-blue-600">Next: <span style="color:${next.color}">${next.name}</span></div>`
     : `<div class="font-bold text-blue-600">No one</div>`;
 
-  // Clear existing sections
   document.getElementById("activePlayers").innerHTML = "";
   document.getElementById("skipPlayers").innerHTML = "";
   document.getElementById("outPlayers").innerHTML = "";
 
-  // Render players into the correct section
   renderGroup(activePlayers, "activePlayers", "bg-green-600", "Active");
   renderGroup(skipPlayers, "skipPlayers", "bg-yellow-500", "With Customer");
   renderGroup(outPlayers, "outPlayers", "bg-red-500", "Out of Rotation");
