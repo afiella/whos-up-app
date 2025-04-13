@@ -3,86 +3,108 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Admin Panel</title>
+  <title>ADMIN</title>
+  <!-- Tailwind CSS -->
   <script src="https://cdn.tailwindcss.com"></script>
+
   <style>
     .action-buttons {
       max-height: 0;
       overflow: hidden;
       transition: max-height 0.3s ease;
     }
-
     .expanded .action-buttons {
       max-height: 200px;
     }
-
     .dragging {
       opacity: 0.5;
     }
-
     .drag-over {
       border: 2px dashed #3b82f6;
       background-color: #eff6ff;
     }
+    /* Hide admin UI until logged in */
+    #adminUI {
+      display: none;
+    }
   </style>
 </head>
 <body class="bg-gray-100 min-h-screen p-4">
-  <div class="max-w-2xl mx-auto">
-    <!-- Login Section -->
-    <div id="loginSection" class="text-center mb-8">
-      <h1 class="text-2xl font-bold mb-4">Admin Login</h1>
-      <input 
-        type="password" 
-        id="adminPassword" 
-        placeholder="Enter admin password"
-        class="p-2 w-full border border-gray-300 rounded mb-4"
-        onkeydown="if(event.key==='Enter'){checkPassword()}" 
-        onblur="checkPassword()"
+
+  <!-- LOGIN FORM -->
+  <div id="loginForm" class="max-w-md mx-auto bg-white rounded p-4 shadow mb-6">
+    <h2 class="text-xl font-semibold mb-4 text-center">Admin Login</h2>
+    <div class="mb-4">
+      <label for="username" class="block text-sm font-medium mb-1">Username</label>
+      <input
+        type="text"
+        id="username"
+        class="w-full border border-gray-300 rounded px-3 py-2"
+        placeholder="Enter username"
       />
-      <button 
-        onclick="checkPassword()" 
-        class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 w-full">
-        Login
+    </div>
+    <div class="mb-4">
+      <label for="password" class="block text-sm font-medium mb-1">Password</label>
+      <input
+        type="password"
+        id="password"
+        class="w-full border border-gray-300 rounded px-3 py-2"
+        placeholder="Enter password"
+      />
+    </div>
+    <button
+      onclick="login()"
+      class="bg-blue-600 text-white px-4 py-2 rounded w-full hover:bg-blue-700"
+    >
+      Login
+    </button>
+  </div>
+
+  <!-- ADMIN UI (HIDDEN UNTIL LOGGED IN) -->
+  <div id="adminUI" class="max-w-2xl mx-auto">
+    <div class="text-center mb-6">
+      <h1 class="text-2xl font-bold">Admin Panel</h1>
+      <div class="mt-2 flex flex-col items-center gap-2">
+        <div>
+          <button onclick="switchRoom('BH')" class="bg-blue-600 text-white px-4 py-2 rounded mr-2 hover:bg-blue-700">
+            View BH
+          </button>
+          <button onclick="switchRoom('59')" class="bg-purple-600 text-white px-4 py-2 rounded hover:bg-purple-700">
+            View 59
+          </button>
+        </div>
+        <p class="text-sm text-gray-600" id="roomTitle">Room: </p>
+        <p class="text-sm text-gray-600" id="currentNextUp"></p>
+      </div>
+    </div>
+
+    <div class="mb-4 text-center">
+      <button
+        onclick="toggleReorderMode()"
+        id="reorderToggle"
+        class="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700"
+      >
+        Enable Reorder Mode
       </button>
     </div>
 
-    <!-- Admin Panel -->
-    <div id="adminPanel" class="hidden">
-      <div class="text-center mb-6">
-        <h2 class="text-xl font-semibold mb-2">Admin Controls</h2>
-        <div class="flex flex-wrap justify-center gap-3 mb-3">
-          <button onclick="switchRoom('BH')" class="bg-blue-600 text-white px-4 py-2 rounded">View BH</button>
-          <button onclick="switchRoom('59')" class="bg-purple-600 text-white px-4 py-2 rounded">View 59</button>
-        </div>
-        <p id="roomTitle" class="text-sm text-gray-700 mb-1">Room: </p>
-        <p id="currentNextUp" class="text-sm text-blue-600 font-medium"></p>
-      </div>
+    <div id="playerList" class="space-y-3 mb-6"></div>
 
-      <div class="text-center mb-4">
-        <button 
-          onclick="toggleReorderMode()" 
-          id="reorderToggle" 
-          class="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700">
-          Enable Reorder Mode
-        </button>
-      </div>
+    <div class="text-center">
+      <button
+        onclick="resetAllPlayers()"
+        class="bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700"
+      >
+        Reset Players
+      </button>
+    </div>
 
-      <div id="playerList" class="space-y-3 mb-6"></div>
-
-      <div class="text-center mb-6">
-        <button 
-          onclick="resetAllPlayers()" 
-          class="bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700">
-          Reset Players
-        </button>
-      </div>
-
-      <div class="text-center">
-        <a href="index.html" class="text-sm text-blue-600 underline">← Back to Landing Page</a>
-      </div>
+    <div class="mt-6 text-center">
+      <a href="index.html" class="text-sm text-blue-600 underline">← Back to Landing Page</a>
     </div>
   </div>
 
+  <!-- Link to your separate admin.js file -->
   <script type="module" src="admin.js"></script>
 </body>
 </html>
