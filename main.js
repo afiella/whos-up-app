@@ -20,20 +20,12 @@ const colorList = ["#2f4156", "#567c8d", "#c8d9e6", "#f5efeb", "#8c5a7f", "#adb3
 const nameButtonsContainer = document.getElementById("nameButtons");
 const nameSelectSection = document.getElementById("nameSelect");
 const mainScreen = document.getElementById("mainScreen");
-const queueDisplay = document.getElementById("queue");
+const queueSection = document.getElementById("queue");
+const skipSection = document.getElementById("skipQueue");
+const outSection = document.getElementById("outQueue");
 const joinedMessage = document.getElementById("joinedMessage");
 const nextUpDiv = document.getElementById("nextUp");
 const takenModal = document.getElementById("takenModal");
-
-// Create extra containers
-const customerDisplay = document.createElement("div");
-const outDisplay = document.createElement("div");
-customerDisplay.id = "withCustomerBox";
-outDisplay.id = "outOfRotationBox";
-customerDisplay.className = "space-y-1 mb-6";
-outDisplay.className = "space-y-1 mb-6";
-queueDisplay.after(customerDisplay);
-customerDisplay.after(outDisplay);
 
 function renderNameButtons() {
   nameButtonsContainer.innerHTML = "";
@@ -95,84 +87,55 @@ function joinWithName(name, color) {
   joinedMessage.textContent = `Welcome, ${name}!`;
 
   db.ref(`rooms/${currentRoom}/players`).on("value", snapshot => {
-    const players = snapshot.val() || {};
-    if (!players[currentUser.name]) {
-      localStorage.removeItem("currentUser");
-      window.location.href = "index.html";
-    } else {
-      updateDisplay(players);
-    }
+    updateDisplay(snapshot.val());
   });
 }
 
 function updateDisplay(playersMap) {
-  const allPlayers = Object.values(playersMap || {});
-  const activePlayers = allPlayers.filter(p => p.active && !p.skip).sort((a, b) => a.joinedAt - b.joinedAt);
-  const withCustomer = allPlayers.filter(p => p.skip && p.active);
-  const outPlayers = allPlayers.filter(p => !p.active);
+  const players = Object.values(playersMap || {});
+  const active = players.filter(p => p.active && !p.skip).sort((a, b) => a.joinedAt - b.joinedAt);
+  const skip = players.filter(p => p.skip && p.active).sort((a, b) => a.joinedAt - b.joinedAt);
+  const out = players.filter(p => !p.active);
 
-  const next = activePlayers[0];
-
+  const next = active[0];
   nextUpDiv.innerHTML = next
-    ? `<div class="font-bold">Next: <span style="color:${next.color}">${next.name}</span></div>`
+    ? `<div class="font-bold text-blue-700 bg-yellow-100 px-3 py-1 rounded shadow inline-block">Next: <span style="color:${next.color}">${next.name}</span></div>`
     : "No one";
 
-  animateBox(queueDisplay, activePlayers);
-  animateBox(customerDisplay, withCustomer);
-  animateBox(outDisplay, outPlayers);
-}
+  // Clear sections
+  queueSection.innerHTML = "";
+  skipSection.innerHTML = "";
+  outSection.innerHTML = "";
 
-function animateBox(container, players) {
-  const oldMap = {};
-  [...container.children].forEach(child => {
-    oldMap[child.dataset.name] = child.getBoundingClientRect();
-  });
+  const renderGroup = (group, container) => {
+    group.forEach(p => {
+      let badge = "bg-green-600", status = "Active";
+      if (p.skip) {
+        badge = "bg-yellow-500";
+        status = "With Customer";
+      }
+      if (!p.active) {
+        badge = "bg-red-500";
+        status = "Out";
+      }
 
-  container.innerHTML = "";
-  players.forEach(p => {
-    let badgeColor = "bg-green-600", status = "Active";
-    if (p.skip) {
-      badgeColor = "bg-yellow-500";
-      status = "With Customer";
-    }
-    if (!p.active) {
-      badgeColor = "bg-red-500";
-      status = "Out of Rotation";
-    }
+      const div = document.createElement("div");
+      div.className = "flex items-center justify-between bg-white p-3 rounded shadow player transition-all";
+      div.dataset.name = p.name;
+      div.innerHTML = `
+        <div class="flex items-center gap-2">
+          <span class="inline-block w-4 h-4 rounded-full" style="background-color: ${p.color}"></span>
+          <span>${p.name}</span>
+        </div>
+        <span class="text-xs text-white px-2 py-1 rounded ${badge}">${status}</span>
+      `;
+      container.appendChild(div);
+    });
+  };
 
-    const div = document.createElement("div");
-    div.className = "flex items-center justify-between bg-white p-3 rounded shadow player";
-    div.dataset.name = p.name;
-    div.innerHTML = `
-      <div class="flex items-center gap-2">
-        <span class="inline-block w-4 h-4 rounded-full" style="background-color: ${p.color}"></span>
-        <span>${p.name}</span>
-      </div>
-      <span class="text-xs text-white px-2 py-1 rounded ${badgeColor}">${status}</span>
-    `;
-    container.appendChild(div);
-  });
-
-  const newMap = {};
-  [...container.children].forEach(child => {
-    newMap[child.dataset.name] = child.getBoundingClientRect();
-  });
-
-  [...container.children].forEach(el => {
-    const name = el.dataset.name;
-    const old = oldMap[name];
-    const newPos = newMap[name];
-    if (old) {
-      const dx = old.left - newPos.left;
-      const dy = old.top - newPos.top;
-      el.style.transform = `translate(${dx}px, ${dy}px)`;
-      el.style.transition = "transform 0s";
-      requestAnimationFrame(() => {
-        el.style.transform = "";
-        el.style.transition = "transform 300ms ease";
-      });
-    }
-  });
+  renderGroup(active, queueSection);
+  renderGroup(skip, skipSection);
+  renderGroup(out, outSection);
 }
 
 function setStatus(type) {
@@ -209,19 +172,12 @@ window.addEventListener("load", () => {
     const userRef = db.ref(`rooms/${currentRoom}/players/${currentUser.name}`);
     userRef.once("value", (snapshot) => {
       if (!snapshot.exists()) {
-        localStorage.removeItem("currentUser");
-        window.location.href = "index.html";
-      } else {
-        db.ref(`rooms/${currentRoom}/players`).on("value", snapshot => {
-          const players = snapshot.val() || {};
-          if (!players[currentUser.name]) {
-            localStorage.removeItem("currentUser");
-            window.location.href = "index.html";
-          } else {
-            updateDisplay(players);
-          }
-        });
+        db.ref(`rooms/${currentRoom}/players/${currentUser.name}`).set(currentUser);
       }
+    });
+
+    db.ref(`rooms/${currentRoom}/players`).on("value", snapshot => {
+      updateDisplay(snapshot.val());
     });
   }
 });
