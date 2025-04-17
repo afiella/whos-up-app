@@ -7,7 +7,21 @@
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+
+  <!-- PWA Support -->
+  <link rel="manifest" href="/manifest.json" />
+  <meta name="theme-color" content="#2f4156" />
+  <link rel="apple-touch-icon" href="/images/icon-192.png" />
+  <link rel="icon" href="/images/icon-192.png" type="image/png" />
+  <script>
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('/service-worker.js').catch(console.error);
+      });
+    }
+  </script>
 </head>
+
 <body class="bg-gray-100 min-h-screen p-4" data-room="BH">
   <div class="max-w-xl mx-auto bg-white p-6 rounded-lg shadow-lg flex flex-col justify-between min-h-[90vh]">
 
@@ -58,6 +72,7 @@
     </div>
   </div>
 
-  <script src="main.js?v=2"></script>
+  <!-- Updated to use ES module -->
+  <script type="module" src="/scripts/main.js"></script>
 </body>
 </html>

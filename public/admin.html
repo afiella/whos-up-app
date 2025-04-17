@@ -4,10 +4,24 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Admin Panel</title>
-  <!-- Tailwind CSS for styling (optional) -->
+
+  <!-- Tailwind CSS -->
   <script src="https://cdn.tailwindcss.com"></script>
+
+  <!-- PWA Support -->
+  <link rel="manifest" href="/manifest.json" />
+  <meta name="theme-color" content="#2f4156" />
+  <link rel="apple-touch-icon" href="/images/icon-192.png" />
+  <link rel="icon" href="/images/icon-192.png" type="image/png" />
+  <script>
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('/service-worker.js').catch(console.error);
+      });
+    }
+  </script>
+
   <style>
-    /* Optional: simple style for the action buttons to expand/collapse */
     .action-buttons {
       max-height: 0;
       overflow: hidden;
@@ -18,6 +32,7 @@
     }
   </style>
 </head>
+
 <body class="bg-gray-100 p-4">
   <div class="max-w-2xl mx-auto">
     <h1 class="text-2xl font-bold text-center mb-4">Admin Panel</h1>
@@ -49,7 +64,7 @@
     </div>
   </div>
 
-  <!-- Load the separate admin.js file -->
-  <script type="module" src="admin.js"></script>
+  <!-- Admin logic with ES module -->
+  <script type="module" src="/scripts/admin.js"></script>
 </body>
 </html>

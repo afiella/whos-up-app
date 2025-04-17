@@ -4,12 +4,17 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Who's Up App</title>
-  <!-- Favicon now points to the images folder -->
-  <link rel="icon" type="image/png" href="/images/header.jpeg" />
+
+  <!-- Icons and PWA Metadata -->
+  <link rel="icon" type="image/png" href="/images/icon-192.png" />
+  <link rel="apple-touch-icon" href="/images/icon-192.png" />
   <link rel="manifest" href="/manifest.json" />
   <meta name="theme-color" content="#2f4156" />
+
+  <!-- Tailwind + Lottie -->
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://unpkg.com/@dotlottie/player-component@2.7.12/dist/dotlottie-player.mjs" type="module"></script>
+
   <style>
     .fade-out {
       opacity: 0;
@@ -30,8 +35,8 @@
     }
   </style>
 </head>
-<body class="bg-[#fdfcf7] min-h-screen flex items-center justify-center px-4">
 
+<body class="bg-[#fdfcf7] min-h-screen flex items-center justify-center px-4">
   <!-- Loading Animation -->
   <div id="loadingScreen" class="hidden fixed inset-0 bg-white flex flex-col items-center justify-center z-50">
     <dotlottie-player
@@ -49,7 +54,6 @@
 
   <!-- Main Interface -->
   <div id="mainPage" class="fade-in bg-white p-6 rounded-xl shadow-2xl text-center space-y-6 w-full max-w-md">
-    <!-- Updated image source to reflect file in public/images -->
     <img src="/images/header.jpeg" alt="Who's Up Logo" class="w-64 mx-auto mb-4 rounded-lg shadow-md" />
     <div class="space-y-5">
       <a href="bh.html" class="transition-link block bg-blue-600 text-white py-3 rounded-lg hover:bg-blue-700 font-semibold">Join BH</a>
@@ -59,7 +63,7 @@
     </div>
   </div>
 
-  <!-- Page Fade Transition -->
+  <!-- Page Transition Logic -->
   <script>
     document.querySelectorAll(".transition-link").forEach(link => {
       link.addEventListener("click", function (e) {
@@ -74,7 +78,7 @@
     });
   </script>
 
-  <!-- Service Worker Registration -->
+  <!-- Service Worker -->
   <script>
     if ("serviceWorker" in navigator) {
       window.addEventListener("load", function () {
@@ -86,7 +90,7 @@
     }
   </script>
 
-  <!-- Auto Redirect to Room if Player is Still Active -->
+  <!-- Auto Redirect if Player is Still Active -->
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-app.js";
     import { getDatabase, ref, get } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-database.js";
@@ -110,7 +114,6 @@
       const refPath = ref(db, `rooms/${stored.room}/players/${stored.name}`);
       get(refPath).then(snapshot => {
         if (snapshot.exists()) {
-          // Automatically redirect to room if player is still present
           window.location.href = `${stored.room.toLowerCase()}.html`;
         } else {
           localStorage.removeItem("currentUser");

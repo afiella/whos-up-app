@@ -3,15 +3,16 @@ const urlsToCache = [
   "/",
   "/index.html",
   "/manifest.json",
-  "/main.js",
-  "/admin.js",
-  "/mod.js",
+  "/scripts/main.js",
+  "/scripts/admin.js",
+  "/scripts/mod.js",
   "/bh.html",
   "/59.html",
   "/admin.html",
   "/modpanel.html",
   "/header.jpeg"
 ];
+
 
 // Install
 self.addEventListener("install", (event) => {

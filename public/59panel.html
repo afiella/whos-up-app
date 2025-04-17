@@ -5,6 +5,20 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>59 Moderator</title>
   <script src="https://cdn.tailwindcss.com"></script>
+
+  <!-- PWA Support -->
+  <link rel="manifest" href="/manifest.json" />
+  <meta name="theme-color" content="#2f4156" />
+  <link rel="apple-touch-icon" href="/images/icon-192.png" />
+  <link rel="icon" href="/images/icon-192.png" type="image/png" />
+  <script>
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('/service-worker.js').catch(console.error);
+      });
+    }
+  </script>
+
   <style>
     .action-buttons {
       max-height: 0;
@@ -26,6 +40,7 @@
     }
   </style>
 </head>
+
 <body class="bg-gray-100 min-h-screen flex items-center justify-center px-4">
   <!-- Login Section -->
   <div id="loginSection" class="text-center w-full max-w-md">
@@ -66,8 +81,7 @@
       ref,
       onValue,
       update,
-      remove,
-      set
+      remove
     } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-database.js";
 
     const firebaseConfig = {
