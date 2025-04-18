@@ -4,22 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Moderator Panel</title>
-
-  <!-- Tailwind CSS -->
   <script src="https://cdn.tailwindcss.com"></script>
-
-  <!-- PWA Metadata -->
-  <link rel="manifest" href="/manifest.json" />
-  <meta name="theme-color" content="#2f4156" />
-  <link rel="apple-touch-icon" href="/images/icon-192.png" />
-  <link rel="icon" href="/images/icon-192.png" type="image/png" />
-  <script>
-    if ('serviceWorker' in navigator) {
-      window.addEventListener('load', () => {
-        navigator.serviceWorker.register('/service-worker.js').catch(console.error);
-      });
-    }
-  </script>
 
   <style>
     .action-buttons {
@@ -30,14 +15,9 @@
     .expanded .action-buttons {
       max-height: 200px;
     }
-    .dragging {
+    .ghost-tag {
       opacity: 0.5;
-      transform: scale(0.98);
-      transition: transform 0.2s ease;
-    }
-    .drag-over {
-      border: 2px dashed #3b82f6;
-      background-color: #eff6ff;
+      font-style: italic;
     }
   </style>
 </head>
@@ -46,43 +26,37 @@
   <!-- Login -->
   <div id="loginSection" class="text-center w-full max-w-md">
     <h1 class="text-2xl font-bold mb-4">Moderator Login</h1>
-    <input type="password" id="adminPassword" placeholder="Enter moderator password"
+    <input type="password" id="modPassword" placeholder="Enter moderator password"
            class="p-2 w-full border border-gray-300 rounded mb-4" />
     <button onclick="checkPassword()" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 w-full">
       Login
     </button>
   </div>
 
-  <!-- Mod Panel -->
-  <div id="adminPanel" class="hidden w-full max-w-2xl p-4">
+  <!-- Panel -->
+  <div id="modPanel" class="hidden w-full max-w-2xl p-4">
     <div class="text-center mb-4">
       <h2 id="roomTitle" class="text-lg font-semibold">Room</h2>
       <p class="text-sm text-gray-500" id="currentNextUp"></p>
     </div>
 
-    <div class="text-center mb-4">
-      <button onclick="toggleReorderMode()" id="reorderToggle"
-        class="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700">
+    <div class="text-center mb-6">
+      <select id="ghostNameSelect" class="border px-3 py-2 rounded text-black mb-2"></select>
+      <button onclick="addGhostPlayer()" class="bg-gray-700 text-white px-4 py-2 rounded hover:bg-gray-800 mr-2">
+        Add Ghost Player
+      </button>
+      <button id="reorderToggle" onclick="toggleReorderMode()" class="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700">
         Enable Reorder Mode
       </button>
     </div>
 
-    <div>
-      <h2 class="text-md font-semibold mb-2">Active Queue:</h2>
-      <div id="playerList" class="space-y-3 mb-6"></div>
-
-      <h2 class="text-md font-semibold mb-2">With Customer:</h2>
-      <div id="withCustomerList" class="space-y-3 mb-6"></div>
-
-      <h2 class="text-md font-semibold mb-2">Out of Rotation:</h2>
-      <div id="outOfRotationList" class="space-y-3 mb-6"></div>
-    </div>
+    <div id="playerList" class="space-y-3"></div>
 
     <div class="mt-6 text-center">
       <a href="index.html" class="text-sm text-blue-600 underline">← Back to Landing Page</a>
     </div>
   </div>
 
-  <script type="module" src="mod.js"></script>
+  <script type="module" src="/scripts/mod.js"></script>
 </body>
 </html>
