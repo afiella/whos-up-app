@@ -231,3 +231,42 @@ function handleDragEnd() {
 
 // Initialize
 switchRoom(currentRoom);
+
+window.joinAsPlayer = async function () {
+  const inputEl = document.getElementById("adminJoinName");
+  if (!inputEl) return;
+
+  const rawInput = inputEl.value.trim();
+  const name = nameList.find(n => n.toLowerCase() === rawInput.toLowerCase());
+  if (!name) {
+    alert("Please enter a valid name from the list.");
+    return;
+  }
+
+  const playerRef = ref(db, `rooms/${currentRoom}/players/${name}`);
+  const snapshot = await get(playerRef);
+  const existing = snapshot.exists() ? snapshot.val() : null;
+
+  const index = nameList.indexOf(name);
+  const color = colorList[index % colorList.length];
+
+  const playerData = {
+    name,
+    color,
+    ghost: false,
+    active: true,
+    skip: false,
+    joinedAt: Date.now()
+  };
+
+  if (existing?.ghost) {
+    await update(playerRef, playerData);
+  } else if (!existing) {
+    await set(playerRef, playerData);
+  } else {
+    alert("That name is already taken.");
+    return;
+  }
+
+  alert(`You have joined the ${currentRoom} room as ${name}`);
+};
