@@ -13,6 +13,14 @@
   <meta name="theme-color" content="#2f4156" />
   <link rel="apple-touch-icon" href="/images/icon-192.png" />
   <link rel="icon" href="/images/icon-192.png" type="image/png" />
+
+  <style>
+    .ghost-tag {
+      opacity: 0.5;
+      font-style: italic;
+    }
+  </style>
+
   <script>
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', () => {
@@ -72,7 +80,7 @@
     </div>
   </div>
 
-  <!-- Updated to use ES module -->
+  <!-- Main logic (ghost-aware) -->
   <script type="module" src="/scripts/main.js"></script>
 </body>
 </html>

@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Select Your Name</title>
+  <link rel="icon" type="image/png" href="/images/header.jpeg" />
+  <meta name="theme-color" content="#2f4156" />
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <style>
+    .name-circle {
+      width: 100px;
+      height: 100px;
+      border-radius: 50%;
+      font-weight: bold;
+      font-size: 16px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 10px;
+      cursor: pointer;
+      transition: transform 0.2s ease;
+      color: white;
+      border: 2px solid transparent;
+    }
+
+    .name-circle:hover {
+      transform: scale(1.05);
+    }
+
+    .ghost {
+      opacity: 0.5;
+      position: relative;
+      animation: ghostPulse 2s infinite;
+    }
+
+    .ghost:hover {
+      opacity: 0.7;
+      border: 2px dashed white;
+    }
+
+    .ghost::after {
+      content: "Reserved – waiting to join";
+      position: absolute;
+      bottom: -24px;
+      left: 50%;
+      transform: translateX(-50%);
+      font-size: 12px;
+      background: rgba(0,0,0,0.7);
+      color: white;
+      padding: 2px 6px;
+      border-radius: 4px;
+      white-space: nowrap;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.2s ease;
+      z-index: 10;
+    }
+
+    .ghost:hover::after {
+      opacity: 1;
+    }
+
+    @keyframes ghostPulse {
+      0% { box-shadow: 0 0 0 0 rgba(255,255,255,0.4); }
+      70% { box-shadow: 0 0 0 10px rgba(255,255,255,0); }
+      100% { box-shadow: 0 0 0 0 rgba(255,255,255,0); }
+    }
+  </style>
+</head>
+<body class="bg-[#2f4156] min-h-screen flex flex-col justify-center items-center text-white px-4">
+    <h1 class="text-3xl font-bold mb-6">Select Your Name</h1>
+    <div id="nameSelection" class="flex flex-wrap justify-center max-w-4xl"></div>
+  
+    <script type="module" src="/scripts/select.js"></script>
+  </body>
+</html>
