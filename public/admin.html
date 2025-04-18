@@ -4,22 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Admin Panel</title>
-
-  <!-- Tailwind CSS -->
   <script src="https://cdn.tailwindcss.com"></script>
-
-  <!-- PWA Support -->
-  <link rel="manifest" href="/manifest.json" />
-  <meta name="theme-color" content="#2f4156" />
-  <link rel="apple-touch-icon" href="/images/icon-192.png" />
-  <link rel="icon" href="/images/icon-192.png" type="image/png" />
-  <script>
-    if ('serviceWorker' in navigator) {
-      window.addEventListener('load', () => {
-        navigator.serviceWorker.register('/service-worker.js').catch(console.error);
-      });
-    }
-  </script>
 
   <style>
     .action-buttons {
@@ -30,13 +15,17 @@
     .expanded .action-buttons {
       max-height: 200px;
     }
+    .ghost-tag {
+      opacity: 0.5;
+      font-style: italic;
+    }
   </style>
 </head>
 
 <body class="bg-gray-100 p-4">
   <div class="max-w-2xl mx-auto">
     <h1 class="text-2xl font-bold text-center mb-4">Admin Panel</h1>
-    
+
     <!-- Room Switch Buttons -->
     <div class="text-center mb-4">
       <button onclick="switchRoom('BH')" class="bg-blue-600 text-white px-4 py-2 rounded mr-2">
@@ -49,8 +38,16 @@
 
     <!-- Room Title and Next Up -->
     <div class="text-center mb-4">
-      <p id="roomTitle" class="text-lg font-semibold"></p>
+      <p id="roomTitle" class="text-lg font-semibold">Room: BH</p>
       <p id="currentNextUp" class="text-sm text-gray-600"></p>
+    </div>
+
+    <!-- Add Ghost Player -->
+    <div class="text-center mb-6">
+      <select id="ghostNameSelect" class="border px-3 py-2 rounded text-black mb-2"></select>
+      <button onclick="addGhostPlayer()" class="bg-gray-700 text-white px-4 py-2 rounded hover:bg-gray-800">
+        Add Ghost Player
+      </button>
     </div>
 
     <!-- Player List -->
@@ -64,7 +61,6 @@
     </div>
   </div>
 
-  <!-- Admin logic with ES module -->
   <script type="module" src="/scripts/admin.js"></script>
 </body>
 </html>
