@@ -21,20 +21,9 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const db = getDatabase(app);
 
-// Load name visuals
-function loadNamePreview() {
-  nameList.forEach((name, i) => {
-    const div = document.createElement("div");
-    div.className = "name-circle";
-    div.style.backgroundColor = colorList[i % colorList.length];
-    div.textContent = name;
-    nameCircles.appendChild(div);
-  });
-}
+const nameList = ["Archie", "Ella", "Veronica", "Dan", "Alex", "Adam", "Darryl", "Michael", "Tia", "Rob", "Jeremy", "Nassir", "Greg"];
+const colorList = ["#2f4156", "#567c8d", "#c8d9e6", "#f5efeb", "#8c5a7f", "#adb3bc", "#4697df", "#d195b2", "#f9cb9c", "#88afb7", "#bdcccf", "#ede1bc", "#b9a3e3"];
 
-loadNamePreview();
-
-// Handle Join for BH or 59
 window.handleJoin = async function(room) {
   const input = document.getElementById("nameInput").value.trim();
   const name = nameList.find(n => n.toLowerCase() === input.toLowerCase());
@@ -44,11 +33,11 @@ window.handleJoin = async function(room) {
     return;
   }
 
+  const index = nameList.indexOf(name);
+  const color = colorList[index % colorList.length];
   const playerRef = ref(db, `rooms/${room}/players/${name}`);
   const snap = await get(playerRef);
   const existing = snap.exists() ? snap.val() : null;
-  const index = nameList.indexOf(name);
-  const color = colorList[index % colorList.length];
 
   const userData = {
     name,
