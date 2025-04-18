@@ -7,6 +7,7 @@ import {
   set
 } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-database.js";
 
+// --- Firebase Config ---
 const firebaseConfig = {
   apiKey: "AIzaSyDkEKUzUhc-nKFLnF1w0MOm6qwpKHTpfaI",
   authDomain: "who-s-up-app.firebaseapp.com",
@@ -20,37 +21,37 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const db = getDatabase(app);
 
-const nameList = ["Archie", "Ella", "Veronica", "Dan", "Alex", "Adam", "Darryl", "Michael", "Tia", "Rob", "Jeremy", "Nassir", "Greg"];
-const colorList = ["#2f4156", "#567c8d", "#c8d9e6", "#f5efeb", "#8c5a7f", "#adb3bc", "#4697df", "#d195b2", "#f9cb9c", "#88afb7", "#bdcccf", "#ede1bc", "#b9a3e3"];
+// --- Room from Query ---
+const params = new URLSearchParams(window.location.search);
+const currentRoom = params.get("room");
+
+if (!currentRoom || (currentRoom !== "BH" && currentRoom !== "59")) {
+  alert("No valid room selected. Redirecting...");
+  window.location.href = "index.html";
+}
 
 const nameContainer = document.getElementById("nameSelection");
-let latestSnapshotBH = {};
-let latestSnapshot59 = {};
+const nameList = ["Archie", "Ella", "Veronica", "Dan", "Alex", "Adam", "Darryl", "Michael", "Tia", "Rob", "Jeremy", "Nassir", "Greg"];
+const colorList = ["#2f4156", "#567c8d", "#c8d9e6", "#f5efeb", "#8c5a7f", "#adb3bc", "#4697df", "#d195b2", "#f9cb9c", "#88afb7", "#bdcccf", "#ede1bc", "#b9a3e3"];
 
 loadPlayers();
 
 async function loadPlayers() {
-  const [bhSnap, r59Snap] = await Promise.all([
-    get(ref(db, "rooms/BH/players")),
-    get(ref(db, "rooms/59/players"))
-  ]);
-
-  latestSnapshotBH = bhSnap.val() || {};
-  latestSnapshot59 = r59Snap.val() || {};
-
-  renderNameCircles();
+  const roomRef = ref(db, `rooms/${currentRoom}/players`);
+  const snapshot = await get(roomRef);
+  const players = snapshot.val() || {};
+  renderNameCircles(players);
 }
 
-function renderNameCircles() {
+function renderNameCircles(players) {
   nameContainer.innerHTML = "";
 
   nameList.forEach((name, i) => {
     const color = colorList[i % colorList.length];
-    const bhPlayer = latestSnapshotBH[name];
-    const r59Player = latestSnapshot59[name];
+    const player = players[name];
 
-    const isTaken = (bhPlayer && !bhPlayer.ghost) || (r59Player && !r59Player.ghost);
-    const isGhost = (bhPlayer && bhPlayer.ghost) || (r59Player && r59Player.ghost);
+    const isTaken = player && !player.ghost;
+    const isGhost = player && player.ghost;
 
     if (isTaken) return;
 
@@ -64,55 +65,30 @@ function renderNameCircles() {
 }
 
 async function handleNameClick(name, color) {
-  const bhRef = ref(db, `rooms/BH/players/${name}`);
-  const r59Ref = ref(db, `rooms/59/players/${name}`);
+  const playerRef = ref(db, `rooms/${currentRoom}/players/${name}`);
+  const snapshot = await get(playerRef);
+  const existing = snapshot.exists() ? snapshot.val() : null;
 
-  const [bhSnap, r59Snap] = await Promise.all([get(bhRef), get(r59Ref)]);
-  const bhData = bhSnap.exists() ? bhSnap.val() : null;
-  const r59Data = r59Snap.exists() ? r59Snap.val() : null;
+  const userData = {
+    name,
+    color,
+    ghost: false,
+    active: true,
+    skip: false,
+    joinedAt: Date.now()
+  };
 
-  const ghostData = bhData?.ghost ? { room: "BH", ref: bhRef } :
-                    r59Data?.ghost ? { room: "59", ref: r59Ref } : null;
-
-  if (ghostData) {
-    await update(ghostData.ref, {
-      ghost: false,
-      active: true,
-      skip: false,
-      joinedAt: Date.now(),
-      color
-    });
-
-    localStorage.setItem("currentUser", JSON.stringify({
-      name,
-      color,
-      room: ghostData.room
-    }));
-
-    window.location.href = `${ghostData.room.toLowerCase()}.html`;
-    return;
-  }
-
-  if (!bhData && !r59Data) {
-    const room = prompt("Which room? (BH or 59)").toUpperCase() === "59" ? "59" : "BH";
-    const newRef = ref(db, `rooms/${room}/players/${name}`);
-    await set(newRef, {
-      name,
-      color,
-      ghost: false,
-      active: true,
-      skip: false,
-      joinedAt: Date.now()
-    });
-
-    localStorage.setItem("currentUser", JSON.stringify({
-      name,
-      color,
-      room
-    }));
-
-    window.location.href = `${room.toLowerCase()}.html`;
+  if (existing?.ghost) {
+    await update(playerRef, userData);
   } else {
-    alert("This name is already taken.");
+    await set(playerRef, userData);
   }
+
+  localStorage.setItem("currentUser", JSON.stringify({
+    name,
+    color,
+    room: currentRoom
+  }));
+
+  window.location.href = `${currentRoom.toLowerCase()}.html`;
 }
