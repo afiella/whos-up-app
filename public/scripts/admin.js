@@ -8,7 +8,7 @@ import {
   set
 } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-database.js";
 
-// --- Firebase Config ---
+// Firebase config
 const firebaseConfig = {
   apiKey: "AIzaSyDkEKUzUhc-nKFLnF1w0MOm6qwpKHTpfaI",
   authDomain: "who-s-up-app.firebaseapp.com",
@@ -22,50 +22,55 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const db = getDatabase(app);
 
-// --- Name and Color List ---
+// Name + Color Data
 const nameList = ["Archie", "Ella", "Veronica", "Dan", "Alex", "Adam", "Darryl", "Michael", "Tia", "Rob", "Jeremy", "Nassir", "Greg"];
 const colorList = ["#2f4156", "#567c8d", "#c8d9e6", "#f5efeb", "#8c5a7f", "#adb3bc", "#4697df", "#d195b2", "#f9cb9c", "#88afb7", "#bdcccf", "#ede1bc", "#b9a3e3"];
 
-// --- DOM Elements ---
+// State
 let currentRoom = "BH";
+let reorderMode = false;
+let latestSnapshot = {};
+let draggedKey = null;
+
+// DOM Elements
 const roomTitleEl = document.getElementById("roomTitle");
 const currentNextUpEl = document.getElementById("currentNextUp");
 const playerListEl = document.getElementById("playerList");
 const ghostDropdown = document.getElementById("ghostNameSelect");
+const reorderToggle = document.getElementById("reorderToggle");
 
-// --- ROOM SWITCH ---
+// Switch room
 window.switchRoom = function (room) {
   currentRoom = room;
   roomTitleEl.textContent = `Room: ${room}`;
   listenToRoom();
 };
 
-// --- LISTEN FOR CHANGES ---
+// Listen to Firebase data
 function listenToRoom() {
   const playersRef = ref(db, `rooms/${currentRoom}/players`);
   onValue(playersRef, (snapshot) => {
     const data = snapshot.val() || {};
+    latestSnapshot = data;
     displayPlayers(data);
     updateGhostDropdown(data);
   });
 }
 
-// --- DISPLAY PLAYERS IN ORDER ---
+// Display Players
 function displayPlayers(data) {
   playerListEl.innerHTML = "";
-
   const entries = Object.entries(data).sort((a, b) => a[1].joinedAt - b[1].joinedAt);
   const active = entries.filter(([_, p]) => p.active && !p.skip);
   const skip = entries.filter(([_, p]) => p.active && p.skip);
   const out = entries.filter(([_, p]) => !p.active);
+  const combined = [...active, ...skip, ...out];
 
   currentNextUpEl.textContent = active[0] ? `Next Up: ${active[0][1].name}` : "Next Up: —";
 
-  const combined = [...active, ...skip, ...out];
-
   combined.forEach(([key, player]) => {
     const div = document.createElement("div");
-    div.className = `bg-white rounded shadow px-4 py-3 transition-all ${player.ghost ? "ghost-tag" : ""}`;
+    div.className = `bg-white rounded shadow px-4 py-3 transition-all ${player.ghost ? "opacity-50 italic" : ""}`;
     div.dataset.key = key;
 
     let status = "Out", badgeClass = "bg-red-500";
@@ -99,11 +104,21 @@ function displayPlayers(data) {
       div.classList.toggle("expanded");
     });
 
+    if (reorderMode) {
+      div.setAttribute("draggable", true);
+      div.classList.add("cursor-move");
+
+      div.addEventListener("dragstart", handleDragStart);
+      div.addEventListener("dragover", handleDragOver);
+      div.addEventListener("drop", handleDrop);
+      div.addEventListener("dragend", handleDragEnd);
+    }
+
     playerListEl.appendChild(div);
   });
 }
 
-// --- UPDATE STATUS ---
+// Set Player Status
 window.setStatus = function (key, status) {
   const refPath = ref(db, `rooms/${currentRoom}/players/${key}`);
   const updates =
@@ -116,18 +131,18 @@ window.setStatus = function (key, status) {
   update(refPath, updates);
 };
 
-// --- REMOVE PLAYER ---
+// Remove Player
 window.removePlayer = function (key) {
   remove(ref(db, `rooms/${currentRoom}/players/${key}`));
 };
 
-// --- RESET ALL PLAYERS ---
+// Reset All
 window.resetAllPlayers = function () {
   set(ref(db, "rooms/BH/players"), {});
   set(ref(db, "rooms/59/players"), {});
 };
 
-// --- GHOST PLAYER LOGIC ---
+// Update Ghost Dropdown
 function updateGhostDropdown(players) {
   if (!ghostDropdown) return;
   ghostDropdown.innerHTML = "";
@@ -145,6 +160,7 @@ function updateGhostDropdown(players) {
   });
 }
 
+// Add Ghost Player
 window.addGhostPlayer = function () {
   const name = ghostDropdown.value;
   if (!name) return;
@@ -165,5 +181,53 @@ window.addGhostPlayer = function () {
   set(ghostRef, ghostData);
 };
 
-// --- Start listening to the default room on load
+// Reorder Mode Toggle
+window.toggleReorderMode = function () {
+  reorderMode = !reorderMode;
+  document.getElementById("reorderToggle").textContent = reorderMode ? "Finish Reordering" : "Enable Reorder Mode";
+  displayPlayers(latestSnapshot);
+};
+
+// Drag + Drop Events
+function handleDragStart(e) {
+  draggedKey = this.dataset.key;
+  this.classList.add("opacity-50");
+}
+
+function handleDragOver(e) {
+  e.preventDefault();
+  this.classList.add("ring-2", "ring-blue-400");
+}
+
+function handleDrop(e) {
+  e.preventDefault();
+  const targetKey = this.dataset.key;
+
+  const ordered = Object.entries(latestSnapshot)
+    .sort((a, b) => a[1].joinedAt - b[1].joinedAt);
+
+  const fromIndex = ordered.findIndex(([k]) => k === draggedKey);
+  const toIndex = ordered.findIndex(([k]) => k === targetKey);
+
+  if (fromIndex === -1 || toIndex === -1) return;
+
+  const [moved] = ordered.splice(fromIndex, 1);
+  ordered.splice(toIndex, 0, moved);
+
+  const now = Date.now();
+  const updates = {};
+  ordered.forEach(([key, val], i) => {
+    updates[key] = { ...val, joinedAt: now + i };
+  });
+
+  set(ref(db, `rooms/${currentRoom}/players`), { ...latestSnapshot, ...updates });
+}
+
+function handleDragEnd() {
+  draggedKey = null;
+  document.querySelectorAll(".ring-2").forEach(el => el.classList.remove("ring-2", "ring-blue-400"));
+  document.querySelectorAll(".opacity-50").forEach(el => el.classList.remove("opacity-50"));
+}
+
+// Initialize
 switchRoom(currentRoom);
