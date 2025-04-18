@@ -5,7 +5,8 @@ import {
   onValue,
   update,
   remove,
-  set
+  set,
+  get
 } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-database.js";
 
 // Firebase config
