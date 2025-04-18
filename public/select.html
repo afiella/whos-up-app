@@ -33,7 +33,7 @@
 </head>
 
 <body class="bg-[#2f4156] min-h-screen flex flex-col items-center justify-center text-white px-4 py-6">
-  <h1 class="text-3xl font-bold mb-6">Who are you?</h1>
+  <h1 class="text-3xl font-bold mb-6">Enter Your Name</h1>
 
   <div id="nameCircles" class="flex flex-wrap justify-center mb-6 max-w-4xl"></div>
 
@@ -46,12 +46,17 @@
     />
   </div>
 
-  <button
-    id="joinButton"
-    class="bg-green-600 hover:bg-green-700 text-white px-6 py-2 rounded font-semibold"
-  >
-    Join Room
-  </button>
+  <div class="flex gap-4">
+    <button
+      class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded font-semibold"
+      onclick="handleJoin('BH')"
+    >Join BH</button>
+
+    <button
+      class="bg-purple-600 hover:bg-purple-700 text-white px-6 py-2 rounded font-semibold"
+      onclick="handleJoin('59')"
+    >Join 59</button>
+  </div>
 
   <a href="index.html" class="mt-6 text-sm text-white underline hover:text-gray-300 block">
     ← Back to Home
