@@ -33,14 +33,8 @@
 <body class="bg-gray-100 min-h-screen p-4" data-room="59">
   <div class="max-w-xl mx-auto bg-white p-6 rounded-lg shadow-lg flex flex-col justify-between min-h-[90vh]">
 
-    <!-- Name Select Section -->
-    <div id="nameSelect">
-      <p class="text-center mb-2">Select Your Name</p>
-      <div id="nameButtons" class="flex flex-wrap gap-3 justify-center mb-4"></div>
-    </div>
-
     <!-- Main Screen -->
-    <div id="mainScreen" class="hidden flex-grow flex flex-col justify-between">
+    <div id="mainScreen" class="flex-grow flex flex-col justify-between">
       <div>
         <div class="text-center mb-4">
           <p id="joinedMessage" class="text-green-600 font-medium"></p>
@@ -80,7 +74,7 @@
     </div>
   </div>
 
-  <!-- Main logic (ghost-aware) -->
+  <!-- Main logic script -->
   <script type="module" src="/scripts/main.js"></script>
 </body>
 </html>
