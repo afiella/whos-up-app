@@ -140,10 +140,16 @@ window.setStatus = function (status) {
   update(refPath, updates);
 };
 
-window.leaveGame = function () {
-  const refPath = ref(db, `rooms/${currentRoom}/players/${playerName}`);
-  remove(refPath).then(() => {
-    localStorage.removeItem("currentUser");
-    location.reload();
-  });
+window.leaveGame = async function () {
+  const stored = JSON.parse(localStorage.getItem("currentUser") || "{}");
+  if (!stored?.name || !stored?.room) {
+    window.location.href = "index.html";
+    return;
+  }
+
+  const playerRef = ref(db, `rooms/${stored.room}/players/${stored.name}`);
+  await remove(playerRef);
+
+  localStorage.removeItem("currentUser");
+  window.location.href = "index.html";
 };
