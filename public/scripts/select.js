@@ -3,11 +3,10 @@ import {
   getDatabase,
   ref,
   get,
-  update,
-  set
+  set,
+  update
 } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-database.js";
 
-// Firebase Config
 const firebaseConfig = {
   apiKey: "AIzaSyDkEKUzUhc-nKFLnF1w0MOm6qwpKHTpfaI",
   authDomain: "who-s-up-app.firebaseapp.com",
@@ -21,47 +20,47 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const db = getDatabase(app);
 
-const nameList = ["Archie", "Ella", "Veronica", "Dan", "Alex", "Adam", "Darryl", "Michael", "Tia", "Rob", "Jeremy", "Nassir", "Greg"];
-const colorList = ["#2f4156", "#567c8d", "#c8d9e6", "#f5efeb", "#8c5a7f", "#adb3bc", "#4697df", "#d195b2", "#f9cb9c", "#88afb7", "#bdcccf", "#ede1bc", "#b9a3e3"];
+const nameInput = document.getElementById("nameInput");
 
-window.handleJoin = async function(room) {
-  const input = document.getElementById("nameInput").value.trim();
-  const name = nameList.find(n => n.toLowerCase() === input.toLowerCase());
-
+window.handleJoin = async function (room) {
+  const name = nameInput.value.trim();
   if (!name) {
-    alert("Please enter a valid name from the list.");
+    alert("Please enter a name.");
     return;
   }
 
-  const index = nameList.indexOf(name);
-  const color = colorList[index % colorList.length];
   const playerRef = ref(db, `rooms/${room}/players/${name}`);
-  const snap = await get(playerRef);
-  const existing = snap.exists() ? snap.val() : null;
+  const snapshot = await get(playerRef);
 
-  const userData = {
+  if (snapshot.exists() && !snapshot.val()?.ghost) {
+    alert("That name is already taken!");
+    return;
+  }
+
+  const colorList = ["#2f4156", "#567c8d", "#c8d9e6", "#f5efeb", "#8c5a7f", "#adb3bc", "#4697df", "#d195b2", "#f9cb9c", "#88afb7", "#bdcccf", "#ede1bc", "#b9a3e3"];
+  const color = colorList[Math.floor(Math.random() * colorList.length)];
+
+  const newPlayerData = {
     name,
     color,
-    ghost: false,
     active: true,
     skip: false,
+    ghost: false,
     joinedAt: Date.now()
   };
 
-  if (existing?.ghost) {
-    await update(playerRef, userData);
-  } else if (!existing) {
-    await set(playerRef, userData);
+  if (snapshot.exists() && snapshot.val().ghost) {
+    await update(playerRef, newPlayerData);
   } else {
-    alert("That name is already taken.");
-    return;
+    await set(playerRef, newPlayerData);
   }
 
-  localStorage.setItem("currentUser", JSON.stringify({
-    name,
-    color,
-    room
-  }));
+  localStorage.setItem("currentUser", JSON.stringify({ name, color, room }));
 
-  window.location.href = `${room.toLowerCase()}.html`;
+  // redirect to proper room
+  if (room === "BH") {
+    window.location.href = "bh.html";
+  } else if (room === "59") {
+    window.location.href = "59.html";
+  }
 };
