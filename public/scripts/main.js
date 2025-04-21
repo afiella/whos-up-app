@@ -22,7 +22,6 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const db = getDatabase(app);
 
-const nameList = ["Archie", "Ella", "Veronica", "Dan", "Alex", "Adam", "Darryl", "Michael", "Tia", "Rob", "Jeremy", "Nassir", "Greg"];
 const colorList = ["#2f4156", "#567c8d", "#c8d9e6", "#f5efeb", "#8c5a7f", "#adb3bc", "#4697df", "#d195b2", "#f9cb9c", "#88afb7", "#bdcccf", "#ede1bc", "#b9a3e3"];
 
 const currentRoom = document.body.dataset.room;
@@ -50,23 +49,29 @@ if (playerName && currentRoom) {
 }
 
 function renderNameButtons() {
-  const roomRef = ref(db, `rooms/${currentRoom}/players`);
-  get(roomRef).then(snapshot => {
-    const players = snapshot.val() || {};
+  const roomPlayersRef = ref(db, `rooms/${currentRoom}/players`);
+  const availableNamesRef = ref(db, `rooms/${currentRoom}/availableNames`);
 
-    nameList.forEach((name, i) => {
-      const player = players[name];
-      const isTaken = player && !player.ghost;
+  Promise.all([get(roomPlayersRef), get(availableNamesRef)]).then(
+    ([playersSnap, namesSnap]) => {
+      const players = playersSnap.val() || {};
+      const availableNames = namesSnap.val() || [];
 
-      if (!isTaken) {
-        const btn = document.createElement("button");
-        btn.className = "name-circle bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-full";
-        btn.textContent = name;
-        btn.onclick = () => joinGame(name, colorList[i % colorList.length]);
-        nameButtons.appendChild(btn);
-      }
-    });
-  });
+      availableNames.forEach((name, i) => {
+        const player = players[name];
+        const isTaken = player && !player.ghost;
+
+        if (!isTaken) {
+          const btn = document.createElement("button");
+          btn.className =
+            "name-circle bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-full";
+          btn.textContent = name;
+          btn.onclick = () => joinGame(name, colorList[i % colorList.length]);
+          nameButtons.appendChild(btn);
+        }
+      });
+    }
+  );
 }
 
 async function joinGame(name, color) {
