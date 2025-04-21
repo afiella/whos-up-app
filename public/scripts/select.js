@@ -21,13 +21,16 @@ const app = initializeApp(firebaseConfig);
 const db = getDatabase(app);
 
 const nameInput = document.getElementById("nameInput");
-
+// hand join function
 window.handleJoin = async function (room) {
   const name = nameInput.value.trim();
   if (!name) {
     alert("Please enter a name.");
     return;
   }
+
+  // auto caps the 1st letter to names
+  const formattedName = name.charAt(0).toUpperCase() + name.slice(1).toLowerCase();
 
   const playerRef = ref(db, `rooms/${room}/players/${name}`);
   const snapshot = await get(playerRef);
