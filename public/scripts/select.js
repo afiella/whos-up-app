@@ -21,18 +21,27 @@ const app = initializeApp(firebaseConfig);
 const db = getDatabase(app);
 
 const nameInput = document.getElementById("nameInput");
-// hand join function
+
+// Convert to full title case (e.g., "ella osei" => "Ella Osei")
+function toTitleCase(str) {
+  return str
+    .split(" ")
+    .filter(word => word.length)
+    .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+    .join(" ");
+}
+
+// Handle join function
 window.handleJoin = async function (room) {
-  const name = nameInput.value.trim();
-  if (!name) {
+  const rawName = nameInput.value.trim();
+  if (!rawName) {
     alert("Please enter a name.");
     return;
   }
 
-  // auto caps the 1st letter to names
-  const formattedName = name.charAt(0).toUpperCase() + name.slice(1).toLowerCase();
+  const formattedName = toTitleCase(rawName);
 
-  const playerRef = ref(db, `rooms/${room}/players/${name}`);
+  const playerRef = ref(db, `rooms/${room}/players/${formattedName}`);
   const snapshot = await get(playerRef);
 
   if (snapshot.exists() && !snapshot.val()?.ghost) {
@@ -44,7 +53,7 @@ window.handleJoin = async function (room) {
   const color = colorList[Math.floor(Math.random() * colorList.length)];
 
   const newPlayerData = {
-    name,
+    name: formattedName,
     color,
     active: true,
     skip: false,
@@ -58,7 +67,7 @@ window.handleJoin = async function (room) {
     await set(playerRef, newPlayerData);
   }
 
-  localStorage.setItem("currentUser", JSON.stringify({ name, color, room }));
+  localStorage.setItem("currentUser", JSON.stringify({ name: formattedName, color, room }));
 
   // redirect to proper room
   if (room === "BH") {
