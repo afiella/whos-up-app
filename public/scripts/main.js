@@ -28,7 +28,9 @@ const currentRoom = document.body.dataset.room;
 const playerName = JSON.parse(localStorage.getItem("currentUser") || "{}")?.name;
 const playerColor = JSON.parse(localStorage.getItem("currentUser") || "{}")?.color;
 
-const nameButtons = document.getElementById("nameButtons");
+const nameInput = document.getElementById("nameInput");
+const joinBtn = document.getElementById("joinBtn");
+
 const nameSelect = document.getElementById("nameSelect");
 const mainScreen = document.getElementById("mainScreen");
 const joinedMessage = document.getElementById("joinedMessage");
@@ -38,46 +40,31 @@ const activePlayers = document.getElementById("activePlayers");
 const skipPlayers = document.getElementById("skipPlayers");
 const outPlayers = document.getElementById("outPlayers");
 
-// If player has already joined, skip name select
+// If player already joined
 if (playerName && currentRoom) {
   nameSelect?.classList.add("hidden");
   mainScreen?.classList.remove("hidden");
   joinedMessage.textContent = `You joined as ${playerName}`;
   listenToRoom();
-} else {
-  renderNameButtons();
 }
 
-function renderNameButtons() {
-  const roomPlayersRef = ref(db, `rooms/${currentRoom}/players`);
-  const availableNamesRef = ref(db, `rooms/${currentRoom}/availableNames`);
+joinBtn?.addEventListener("click", async () => {
+  const name = nameInput.value.trim();
 
-  Promise.all([get(roomPlayersRef), get(availableNamesRef)]).then(
-    ([playersSnap, namesSnap]) => {
-      const players = playersSnap.val() || {};
-      const availableNames = namesSnap.val() || [];
+  if (!name) {
+    alert("Please enter a name");
+    return;
+  }
 
-      availableNames.forEach((name, i) => {
-        const player = players[name];
-        const isTaken = player && !player.ghost;
+  const playerRef = ref(db, `rooms/${currentRoom}/players/${name}`);
+  const snap = await get(playerRef);
 
-        if (!isTaken) {
-          const btn = document.createElement("button");
-          btn.className =
-            "name-circle bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-full";
-          btn.textContent = name;
-          btn.onclick = () => joinGame(name, colorList[i % colorList.length]);
-          nameButtons.appendChild(btn);
-        }
-      });
-    }
-  );
-}
+  if (snap.exists() && !snap.val().ghost) {
+    alert("Name is already taken!");
+    return;
+  }
 
-async function joinGame(name, color) {
-  const refPath = ref(db, `rooms/${currentRoom}/players/${name}`);
-  const snap = await get(refPath);
-  const isGhost = snap.exists() && snap.val()?.ghost;
+  const color = colorList[Math.floor(Math.random() * colorList.length)];
 
   const newData = {
     name,
@@ -88,15 +75,15 @@ async function joinGame(name, color) {
     joinedAt: Date.now()
   };
 
-  if (isGhost) {
-    await update(refPath, newData);
+  if (snap.exists() && snap.val().ghost) {
+    await update(playerRef, newData);
   } else {
-    await set(refPath, newData);
+    await set(playerRef, newData);
   }
 
   localStorage.setItem("currentUser", JSON.stringify({ name, color, room: currentRoom }));
-  location.reload(); // reload to initialize full interface
-}
+  location.reload();
+});
 
 function listenToRoom() {
   const roomRef = ref(db, `rooms/${currentRoom}/players`);
@@ -113,7 +100,6 @@ function renderQueues(players) {
   const skip = entries.filter(([_, p]) => p.active && p.skip);
   const out = entries.filter(([_, p]) => !p.active);
 
-  // Set “Next Up”
   nextUp.textContent = active[0] ? `Next: ${active[0][1].name}` : "";
 
   renderSection(activePlayers, active);
