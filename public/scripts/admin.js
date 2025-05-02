@@ -230,6 +230,37 @@ function handleDragEnd() {
   document.querySelectorAll(".opacity-50").forEach(el => el.classList.remove("opacity-50"));
 }
 
+reorderBtn.innerText = 'Enable Reorder Mode';
+
+// Click handler toggles drag-and-drop
+reorderBtn.addEventListener('click', () => {
+  if (!sortableInstance) {
+    // Activate reorder mode
+    reorderBtn.innerText = 'Reorder Players';
+    reorderBtn.classList.add('active-reorder');
+
+    // Initialize SortableJS on the player list
+    sortableInstance = Sortable.create(playerList, {
+      animation: 200,
+      handle: '.drag-handle',       // optional: only allow dragging from a specific handle
+      ghostClass: 'sortable-ghost', // class when dragging
+      dragClass: 'sortable-drag',   // class on the moving element
+      onEnd: (evt) => {
+        // evt.oldIndex, evt.newIndex available
+        const newOrder = [...playerList.children].map(el => el.dataset.playerId);
+        console.log('New player order:', newOrder);
+        // TODO: sync with Firebase or backend here
+      }
+    });
+  } else {
+    // Deactivate reorder mode
+    sortableInstance.destroy();
+    sortableInstance = null;
+    reorderBtn.innerText = 'Enable Reorder Mode';
+    reorderBtn.classList.remove('active-reorder');
+  }
+});
+
 // Initialize
 switchRoom(currentRoom);
 
