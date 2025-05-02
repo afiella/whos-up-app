@@ -137,10 +137,11 @@ window.removePlayer = function (key) {
   remove(ref(db, `rooms/${currentRoom}/players/${key}`));
 };
 
-// Reset All
+
+// Replace your resetAllPlayers with this:
 window.resetAllPlayers = function () {
-  set(ref(db, "rooms/BH/players"), {});
-  set(ref(db, "rooms/59/players"), {});
+  if (!currentRoom) return;
+  set(ref(db, `rooms/${currentRoom}/players`), {});
 };
 
 // Update Ghost Dropdown
