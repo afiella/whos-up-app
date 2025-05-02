@@ -261,6 +261,37 @@ reorderBtn.addEventListener('click', () => {
     reorderBtn.classList.remove('active-reorder');
   }
 });
+// in admin.js, replace your initSortable() with:
+
+function initSortable() {
+  sortableInstance = Sortable.create(playerList, {
+    handle: '.drag-handle',
+    animation: 200,
+    forceFallback: true,
+    fallbackOnBody: true,
+    swapThreshold: 0.65,
+    ghostClass: 'sortable-ghost',
+    fallbackClass: 'sortable-fallback',
+    delay: 200,
+    delayOnTouchOnly: true,
+    touchStartThreshold: 5,
+    pullThreshold: 5,
+    onMove: () => reorderMode,
+    onEnd: (evt) => {
+      const orderedKeys = [...playerList.children].map(li => li.dataset.key);
+      const now = Date.now();
+      const updates = {};
+      orderedKeys.forEach((key, i) => {
+        updates[key] = { ...latestSnapshot[key], joinedAt: now + i };
+      });
+      set(ref(db, `rooms/${currentRoom}/players`), {
+        ...latestSnapshot,
+        ...updates
+      });
+    }
+  });
+}
+
 
 // Initialize
 switchRoom(currentRoom);
