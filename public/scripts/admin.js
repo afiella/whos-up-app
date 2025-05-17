@@ -24,6 +24,7 @@ const app = initializeApp(firebaseConfig);
 const db = getDatabase(app);
 
 // Name + Color Data
+// Ensure Malachi is in the list (he should already be there)
 const nameList = ["Archie", "Ella", "Veronica", "Dan", "Alex", "Adam", "Darryl", "Michael", "Tia", "Rob", "Jeremy", "Nassir", "Malachi", "Greg"];
 const colorList = ["#2f4156", "#567c8d", "#c8d9e6", "#f5efeb", "#8c5a7f", "#adb3bc", "#4697df", "#d195b2", "#f9cb9c", "#88afb7", "#bdcccf", "#ede1bc", "#b9a3e3"];
 
@@ -137,18 +138,20 @@ window.removePlayer = function (key) {
   remove(ref(db, `rooms/${currentRoom}/players/${key}`));
 };
 
-
-// Replace your resetAllPlayers with this:
+// Reset all players
 window.resetAllPlayers = function () {
   if (!currentRoom) return;
   set(ref(db, `rooms/${currentRoom}/players`), {});
 };
 
-// Update Ghost Dropdown
+// Update Ghost Dropdown - Improved to ensure Malachi is an option if available
 function updateGhostDropdown(players) {
   if (!ghostDropdown) return;
   ghostDropdown.innerHTML = "";
-
+  
+  // Debugging - log available names for ghost players
+  console.log("Updating ghost dropdown with available names");
+  
   nameList.forEach((name, i) => {
     const player = players[name];
     const isTaken = player && !player.ghost;
@@ -158,14 +161,29 @@ function updateGhostDropdown(players) {
       option.value = name;
       option.textContent = name;
       ghostDropdown.appendChild(option);
+      
+      // Log when Malachi is added to dropdown
+      if (name === "Malachi") {
+        console.log("Malachi added to ghost dropdown");
+      }
+    } else if (name === "Malachi") {
+      console.log("Malachi is currently taken as an active player");
     }
   });
+  
+  // Verify the dropdown has options
+  console.log(`Ghost dropdown now has ${ghostDropdown.options.length} options`);
 }
 
 // Add Ghost Player
 window.addGhostPlayer = function () {
   const name = ghostDropdown.value;
-  if (!name) return;
+  if (!name) {
+    console.log("No name selected in the ghost dropdown");
+    return;
+  }
+  
+  console.log(`Adding ghost player: ${name}`);
 
   const index = nameList.indexOf(name);
   const color = colorList[index % colorList.length];
@@ -180,7 +198,9 @@ window.addGhostPlayer = function () {
   };
 
   const ghostRef = ref(db, `rooms/${currentRoom}/players/${name}`);
-  set(ghostRef, ghostData);
+  set(ghostRef, ghostData)
+    .then(() => console.log(`Successfully added ${name} as ghost player`))
+    .catch(error => console.error(`Error adding ghost player: ${error}`));
 };
 
 // Reorder Mode Toggle
@@ -231,70 +251,15 @@ function handleDragEnd() {
   document.querySelectorAll(".opacity-50").forEach(el => el.classList.remove("opacity-50"));
 }
 
-reorderBtn.innerText = 'Enable Reorder Mode';
-
-// Click handler toggles drag-and-drop
-reorderBtn.addEventListener('click', () => {
-  if (!sortableInstance) {
-    // Activate reorder mode
-    reorderBtn.innerText = 'Reorder Players';
-    reorderBtn.classList.add('active-reorder');
-
-    // Initialize SortableJS on the player list
-    sortableInstance = Sortable.create(playerList, {
-      animation: 200,
-      handle: '.drag-handle',       // optional: only allow dragging from a specific handle
-      ghostClass: 'sortable-ghost', // class when dragging
-      dragClass: 'sortable-drag',   // class on the moving element
-      onEnd: (evt) => {
-        // evt.oldIndex, evt.newIndex available
-        const newOrder = [...playerList.children].map(el => el.dataset.playerId);
-        console.log('New player order:', newOrder);
-        // TODO: sync with Firebase or backend here
-      }
-    });
-  } else {
-    // Deactivate reorder mode
-    sortableInstance.destroy();
-    sortableInstance = null;
-    reorderBtn.innerText = 'Enable Reorder Mode';
-    reorderBtn.classList.remove('active-reorder');
-  }
-});
-// in admin.js, replace your initSortable() with:
-
-function initSortable() {
-  sortableInstance = Sortable.create(playerList, {
-    handle: '.drag-handle',
-    animation: 200,
-    forceFallback: true,
-    fallbackOnBody: true,
-    swapThreshold: 0.65,
-    ghostClass: 'sortable-ghost',
-    fallbackClass: 'sortable-fallback',
-    delay: 200,
-    delayOnTouchOnly: true,
-    touchStartThreshold: 5,
-    pullThreshold: 5,
-    onMove: () => reorderMode,
-    onEnd: (evt) => {
-      const orderedKeys = [...playerList.children].map(li => li.dataset.key);
-      const now = Date.now();
-      const updates = {};
-      orderedKeys.forEach((key, i) => {
-        updates[key] = { ...latestSnapshot[key], joinedAt: now + i };
-      });
-      set(ref(db, `rooms/${currentRoom}/players`), {
-        ...latestSnapshot,
-        ...updates
-      });
-    }
-  });
-}
-
-
 // Initialize
-switchRoom(currentRoom);
+window.onload = function() {
+  const reorderBtn = document.getElementById("reorderToggle");
+  if (reorderBtn) {
+    reorderBtn.innerText = 'Enable Reorder Mode';
+  }
+  
+  switchRoom(currentRoom);
+};
 
 window.joinAsPlayer = async function () {
   const inputEl = document.getElementById("adminJoinName");
