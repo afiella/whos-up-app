@@ -27,7 +27,8 @@ import {
   onValue,
   update,
   remove,
-  set
+  set,
+  get
 } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-database.js";
 import Sortable from "https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/modular/sortable.esm.js";
 
@@ -54,6 +55,15 @@ let sortableInstance = null;
 const nameList = ["Archie","Ella","Veronica","Dan","Alex","Adam","Darryl","Michael","Tia","Rob","Jeremy","Nassir","Malachi","Greg"];
 const colorList = ["#2f4156","#567c8d","#c8d9e6","#f5efeb","#8c5a7f","#adb3bc","#4697df","#d195b2","#f9cb9c","#88afb7","#bdcccf","#ede1bc","#b9a3e3"];
 
+// Helper function to convert to title case
+function toTitleCase(str) {
+  return str
+    .split(" ")
+    .filter(word => word.length)
+    .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+    .join(" ");
+}
+
 document.addEventListener("DOMContentLoaded", () => {
   // Create room selector UI
   const selector = document.createElement('div');
@@ -77,7 +87,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const roomTitle     = document.getElementById("roomTitle");
     const currentNextUp = document.getElementById("currentNextUp");
     const playerList    = document.getElementById("playerList");
-    const ghostDropdown = document.getElementById("ghostNameSelect");
+    const ghostNameInput = document.getElementById("ghostNameInput");
     const reorderToggle = document.getElementById("reorderToggle");
 
     roomTitle.textContent = `Room: ${currentRoom}`;
@@ -87,7 +97,6 @@ document.addEventListener("DOMContentLoaded", () => {
     onValue(playersRef, snap => {
       latestSnapshot = snap.val() || {};
       renderPlayers(latestSnapshot);
-      updateGhostDropdown(latestSnapshot);
     });
 
     reorderToggle.addEventListener('click', () => {
@@ -123,6 +132,7 @@ document.addEventListener("DOMContentLoaded", () => {
             <div class="flex items-center gap-2">
               <span class="drag-handle w-4 h-4 text-xl cursor-grab">☰</span>
               <span class="font-semibold">${player.name}</span>
+              ${player.ghost ? '<span class="text-xs text-gray-500 ml-2">(Ghost)</span>' : ''}
             </div>
             <span class="text-sm text-white px-2 py-1 rounded ${badge}">${status}</span>
           </div>
@@ -160,23 +170,81 @@ document.addEventListener("DOMContentLoaded", () => {
     window.removePlayer = key =>
       remove(ref(db, `rooms/${currentRoom}/players/${key}`));
 
-    function updateGhostDropdown(players) {
-      ghostDropdown.innerHTML = '';
-      nameList.forEach(name => {
-        if (!players[name] || players[name].ghost) {
-          const opt = document.createElement('option');
-          opt.value = name;
-          opt.textContent = name;
-          ghostDropdown.appendChild(opt);
-        }
-      });
-    }
-    window.addGhostPlayer = () => {
-      const name = ghostDropdown.value; if (!name) return;
-      const color = colorList[nameList.indexOf(name) % colorList.length];
+    // Add Ghost Player - Updated to accept any name
+    window.addGhostPlayer = async () => {
+      const rawName = ghostNameInput.value.trim();
+      if (!rawName) {
+        alert("Please enter a name for the ghost player");
+        return;
+      }
+      
+      const name = toTitleCase(rawName);
+      
+      // Check if player already exists
+      const playerRef = ref(db, `rooms/${currentRoom}/players/${name}`);
+      const snapshot = await get(playerRef);
+      
+      if (snapshot.exists()) {
+        alert(`Player "${name}" already exists in this room`);
+        return;
+      }
+      
+      // Get a color - either from the preset list if it's a known name, or random
+      const nameIndex = nameList.findIndex(n => n.toLowerCase() === name.toLowerCase());
+      const color = nameIndex !== -1 
+        ? colorList[nameIndex % colorList.length]
+        : colorList[Math.floor(Math.random() * colorList.length)];
+      
       set(ref(db, `rooms/${currentRoom}/players/${name}`), {
         name, color, ghost:true, active:true, skip:false, joinedAt:Date.now()
       });
+      
+      ghostNameInput.value = ""; // Clear the input
+    };
+
+    // Join as Player - Updated to accept any name
+    window.joinAsPlayer = async () => {
+      const inputEl = document.getElementById("adminJoinName");
+      if (!inputEl) return;
+
+      const rawInput = inputEl.value.trim();
+      if (!rawInput) {
+        alert("Please enter a name");
+        return;
+      }
+      
+      const name = toTitleCase(rawInput);
+
+      const playerRef = ref(db, `rooms/${currentRoom}/players/${name}`);
+      const snapshot = await get(playerRef);
+      const existing = snapshot.exists() ? snapshot.val() : null;
+
+      // Get a color - either from the preset list if it's a known name, or random
+      const nameIndex = nameList.findIndex(n => n.toLowerCase() === name.toLowerCase());
+      const color = nameIndex !== -1 
+        ? colorList[nameIndex % colorList.length]
+        : colorList[Math.floor(Math.random() * colorList.length)];
+
+      const playerData = {
+        name,
+        color,
+        ghost: false,
+        active: true,
+        skip: false,
+        joinedAt: Date.now()
+      };
+
+      if (existing?.ghost) {
+        await update(playerRef, playerData);
+      } else if (!existing) {
+        await set(playerRef, playerData);
+      } else {
+        alert("That name is already taken.");
+        return;
+      }
+
+      alert(`You have joined the ${currentRoom} room as ${name}`);
+      inputEl.value = ""; // Clear the input
     };
 
     function initSortable() {
