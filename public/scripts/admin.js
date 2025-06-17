@@ -23,7 +23,6 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const db = getDatabase(app);
 
-// Name + Color Data
 const nameList = ["Archie", "Ella", "Veronica", "Dan", "Alex","David", "Adam", "Darryl", "Michael", "Tia", "Rob", "Jeremy", "Nassir", "Malachi", "Greg"];
 const colorList = ["#2f4156", "#567c8d", "#c8d9e6", "#f5efeb", "#8c5a7f", "#adb3bc", "#4697df", "#d195b2", "#f9cb9c", "#88afb7", "#bdcccf", "#ede1bc", "#b9a3e3"];
 
@@ -195,13 +194,15 @@ window.movePlayer = function (key, direction) {
   const targetIndex = direction === 'up' ? index - 1 : index + 1;
   if (targetIndex < 0 || targetIndex >= ordered.length) return;
 
-  const [currentKey, currentPlayer] = ordered[index];
-  const [swapKey, swapPlayer] = ordered[targetIndex];
+  const newOrder = [...ordered];
+  const [moved] = newOrder.splice(index, 1);
+  newOrder.splice(targetIndex, 0, moved);
 
   const now = Date.now();
   const updates = {};
-  updates[`rooms/${currentRoom}/players/${currentKey}/joinedAt`] = now + 1;
-  updates[`rooms/${currentRoom}/players/${swapKey}/joinedAt`] = now;
+  newOrder.forEach(([k, v], i) => {
+    updates[`rooms/${currentRoom}/players/${k}/joinedAt`] = now + i;
+  });
 
   update(ref(db), updates);
 };
