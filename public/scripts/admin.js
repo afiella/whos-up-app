@@ -24,31 +24,26 @@ const app = initializeApp(firebaseConfig);
 const db = getDatabase(app);
 
 // Name + Color Data
-// Ensure Malachi is in the list (he should already be there)
 const nameList = ["Archie", "Ella", "Veronica", "Dan", "Alex","David", "Adam", "Darryl", "Michael", "Tia", "Rob", "Jeremy", "Nassir", "Malachi", "Greg"];
 const colorList = ["#2f4156", "#567c8d", "#c8d9e6", "#f5efeb", "#8c5a7f", "#adb3bc", "#4697df", "#d195b2", "#f9cb9c", "#88afb7", "#bdcccf", "#ede1bc", "#b9a3e3"];
 
-// State
 let currentRoom = "BH";
 let reorderMode = false;
 let latestSnapshot = {};
 let draggedKey = null;
 
-// DOM Elements
 const roomTitleEl = document.getElementById("roomTitle");
 const currentNextUpEl = document.getElementById("currentNextUp");
 const playerListEl = document.getElementById("playerList");
 const ghostDropdown = document.getElementById("ghostNameSelect");
 const reorderToggle = document.getElementById("reorderToggle");
 
-// Switch room
 window.switchRoom = function (room) {
   currentRoom = room;
   roomTitleEl.textContent = `Room: ${room}`;
   listenToRoom();
 };
 
-// Listen to Firebase data
 function listenToRoom() {
   const playersRef = ref(db, `rooms/${currentRoom}/players`);
   onValue(playersRef, (snapshot) => {
@@ -59,7 +54,6 @@ function listenToRoom() {
   });
 }
 
-// Display Players
 function displayPlayers(data) {
   playerListEl.innerHTML = "";
   const entries = Object.entries(data).sort((a, b) => a[1].joinedAt - b[1].joinedAt);
@@ -99,6 +93,12 @@ function displayPlayers(data) {
         <div class="text-center">
           <button onclick="removePlayer('${key}')" class="text-red-600 text-sm font-bold">✕ Remove</button>
         </div>
+        ${reorderMode ? `
+        <div class="text-center mt-2 flex justify-center gap-3">
+          <button onclick="movePlayer('${key}', 'up')" class="text-sm text-blue-600 bg-gray-200 rounded px-2 py-1">↑</button>
+          <button onclick="movePlayer('${key}', 'down')" class="text-sm text-blue-600 bg-gray-200 rounded px-2 py-1">↓</button>
+        </div>
+        ` : ''}
       </div>
     `;
 
@@ -120,7 +120,6 @@ function displayPlayers(data) {
   });
 }
 
-// Set Player Status
 window.setStatus = function (key, status) {
   const refPath = ref(db, `rooms/${currentRoom}/players/${key}`);
   const updates =
@@ -133,25 +132,19 @@ window.setStatus = function (key, status) {
   update(refPath, updates);
 };
 
-// Remove Player
 window.removePlayer = function (key) {
   remove(ref(db, `rooms/${currentRoom}/players/${key}`));
 };
 
-// Reset all players
 window.resetAllPlayers = function () {
   if (!currentRoom) return;
   set(ref(db, `rooms/${currentRoom}/players`), {});
 };
 
-// Update Ghost Dropdown - Improved to ensure Malachi is an option if available
 function updateGhostDropdown(players) {
   if (!ghostDropdown) return;
   ghostDropdown.innerHTML = "";
-  
-  // Debugging - log available names for ghost players
-  console.log("Updating ghost dropdown with available names");
-  
+
   nameList.forEach((name, i) => {
     const player = players[name];
     const isTaken = player && !player.ghost;
@@ -161,29 +154,13 @@ function updateGhostDropdown(players) {
       option.value = name;
       option.textContent = name;
       ghostDropdown.appendChild(option);
-      
-      // Log when Malachi is added to dropdown
-      if (name === "Malachi") {
-        console.log("Malachi added to ghost dropdown");
-      }
-    } else if (name === "Malachi") {
-      console.log("Malachi is currently taken as an active player");
     }
   });
-  
-  // Verify the dropdown has options
-  console.log(`Ghost dropdown now has ${ghostDropdown.options.length} options`);
 }
 
-// Add Ghost Player
 window.addGhostPlayer = function () {
   const name = ghostDropdown.value;
-  if (!name) {
-    console.log("No name selected in the ghost dropdown");
-    return;
-  }
-  
-  console.log(`Adding ghost player: ${name}`);
+  if (!name) return;
 
   const index = nameList.indexOf(name);
   const color = colorList[index % colorList.length];
@@ -198,19 +175,37 @@ window.addGhostPlayer = function () {
   };
 
   const ghostRef = ref(db, `rooms/${currentRoom}/players/${name}`);
-  set(ghostRef, ghostData)
-    .then(() => console.log(`Successfully added ${name} as ghost player`))
-    .catch(error => console.error(`Error adding ghost player: ${error}`));
+  set(ghostRef, ghostData);
 };
 
-// Reorder Mode Toggle
 window.toggleReorderMode = function () {
   reorderMode = !reorderMode;
   document.getElementById("reorderToggle").textContent = reorderMode ? "Finish Reordering" : "Enable Reorder Mode";
   displayPlayers(latestSnapshot);
 };
 
-// Drag + Drop Events
+window.movePlayer = function (key, direction) {
+  const ordered = Object.entries(latestSnapshot)
+    .filter(([_, p]) => p.active && !p.skip)
+    .sort((a, b) => a[1].joinedAt - b[1].joinedAt);
+
+  const index = ordered.findIndex(([k]) => k === key);
+  if (index === -1) return;
+
+  const targetIndex = direction === 'up' ? index - 1 : index + 1;
+  if (targetIndex < 0 || targetIndex >= ordered.length) return;
+
+  const [currentKey, currentPlayer] = ordered[index];
+  const [swapKey, swapPlayer] = ordered[targetIndex];
+
+  const now = Date.now();
+  const updates = {};
+  updates[`rooms/${currentRoom}/players/${currentKey}/joinedAt`] = now + 1;
+  updates[`rooms/${currentRoom}/players/${swapKey}/joinedAt`] = now;
+
+  update(ref(db), updates);
+};
+
 function handleDragStart(e) {
   draggedKey = this.dataset.key;
   this.classList.add("opacity-50");
@@ -251,13 +246,12 @@ function handleDragEnd() {
   document.querySelectorAll(".opacity-50").forEach(el => el.classList.remove("opacity-50"));
 }
 
-// Initialize
 window.onload = function() {
   const reorderBtn = document.getElementById("reorderToggle");
   if (reorderBtn) {
     reorderBtn.innerText = 'Enable Reorder Mode';
   }
-  
+
   switchRoom(currentRoom);
 };
 
